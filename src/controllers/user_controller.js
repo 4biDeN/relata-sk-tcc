@@ -1,58 +1,46 @@
-const userService = require('../services/user_services');
+const userService = require('../services/users.service');
 
-const newUser = async (req, res, next) => {
+const createUser = async (req, res) => {
     try {
-        const response = await userService.newUser(req.body);
-        res.status(201).json(response)
-    } catch (error) {
-        res.status(500).send(error.message);
+        const user = await userService.newUser(req.body);
+        res.status(201).json(user);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
     }
 };
 
-const getAllUsers = async (req, res, next) => {
+const getAllUsers = async (req, res) => {
     try {
-        const response = await userService.getAllUsers();
-        res.status(200).json(response);
-    } catch (error) {
-        res.status(500).send(error.message);
+        const users = await userService.getAllUsers();
+        res.json(users);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
     }
 };
 
-const getUserById = async (req, res, next) => {
+const getUser = async (req, res) => {
     try {
-        const userId = parseInt(req.params.id);
-        const response = await userService.getUserById(userId);
-        if (!response) {
-            return res.status(404).send('User not found');
-        }
-        res.status(200).json(response);
-    } catch (error) {
-        res.status(500).send(error.message);
+        const user = await userService.getUserById(req.params.id);
+        if (!user) return res.status(404).json({ message: "Usuário não encontrado" });
+        res.json(user);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
     }
 };
 
 const updateUser = async (req, res) => {
     try {
-        const user_id = parseInt(req.params.id);
-        const data = req.body;
-
-        const updated = await userService.updateUser(user_id, data);
-
-        if (!updated) {
-            return res.status(404).json({ mensagem: 'Usuário não encontrado ou dados não informados.' });
-        }
-
-        res.status(200).json({ mensagem: 'Usuário atualizado com sucesso.' });
+        const updated = await userService.updateUser(req.params.id, req.body);
+        if (!updated) return res.status(400).json({ message: "Nada para atualizar" });
+        res.json({ message: "Usuário atualizado com sucesso" });
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ mensagem: 'Erro ao atualizar usuário.' });
+        res.status(500).json({ message: err.message });
     }
 };
 
-
 module.exports = {
-    newUser,
+    createUser,
     getAllUsers,
-    getUserById,
-    updateUser
+    getUser,
+    updateUser,
 };

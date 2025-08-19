@@ -22,7 +22,7 @@ const login = async(params) => {
         const password = result.rows[0].user_password
         if (cript.comparePassword(password, salt, passed_password)){
             let accessProfile = result.rows[0].user_documento
-            const privateKey = fs.readFileSync("./src/private/private_key.pem"); // necessáiro subir arquivos "https://github.com/4biDeN/LPIII2023/tree/main/src/private"
+            const privateKey = fs.readFileSync("./src/private/private_key.pem");
             let token = jwt.sign({accessProfile}, privateKey, {algorithm: 'RS256', expiresIn: '3d'})
             return {
                 status: "Logado com Sucesso!",

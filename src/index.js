@@ -13,6 +13,8 @@ app.use('/v1/docs', express.static('./src/views'));
 app.use('/docs/swagger.yaml', express.static('./src/docs/swagger.yaml'));
 app.use(cookieParser());
 
+app.use(cors({ origin: 'http://localhost:3030', credentials: true }));
+
 app.listen(port);
 
 app.get('/', (req, res) => {

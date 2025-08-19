@@ -1,7 +1,7 @@
 const userController = require('../controllers/user_controller');
 
 module.exports = (app) => {
-    app.post('/user', userController.newUser
+    app.post('/user', userController.createUser
     /*
         #swagger.tags = ["Usuários"]
         #swagger.summary = "Cria um novo usuário"
@@ -83,7 +83,7 @@ module.exports = (app) => {
         }
     */);
 
-    app.get('/user/:id', userController.getUserById
+    app.get('/user/:id', userController.getUser
     /*
         #swagger.tags = ["Usuários"]
         #swagger.summary = "Obtém um usuário pelo ID"

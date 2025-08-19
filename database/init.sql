@@ -6,7 +6,8 @@ CREATE TABLE t_usuario (
     user_documento VARCHAR(11) UNIQUE NOT NULL,
     user_password TEXT NOT NULL,
     user_salt TEXT NOT NULL,
-    user_tipo INTEGER
+    user_token_version INTEGER,
+    user_tipo INTEGER DEFAULT 1
 );
 
 -- Criação da tabela de tipo de usuário
@@ -57,5 +58,5 @@ FOREIGN KEY (reclamacao_id) REFERENCES t_reclamacao(reclamacao_id)
 ON DELETE CASCADE;
 
 INSERT INTO t_user_type (user_type_name) VALUES
-('Administrador'),
-('Cidadão');
+('Cidadão'),
+('Administrador');
