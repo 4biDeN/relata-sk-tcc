@@ -2,8 +2,7 @@ const crypt = require('../utils/salt');
 const userRepo = require('../repo/user_repo');
 
 const newUser = async (params) => {
-    const { user_username, user_email, user_documento, user_password, } = params;
-
+    const { user_username, user_email, user_documento, user_password } = params;
     const { salt, hashedPassword } = crypt.createPassword(user_password);
 
     return await userRepo.createUser({

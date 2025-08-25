@@ -1,11 +1,11 @@
-const userService = require('../services/users.service');
+const userService = require('../services/user_services');
 
 const createUser = async (req, res) => {
     try {
         const user = await userService.newUser(req.body);
         res.status(201).json(user);
     } catch (err) {
-        res.status(500).json({ message: err.message });
+        res.status(500).json({ message: "passou aqui" });
     }
 };
 

@@ -15,7 +15,6 @@ module.exports = (app) => {
                 user_username: "usuario",
                 user_email: "usuario@email.com",
                 user_documento: "12345678900",
-                user_tipo: 1,
                 user_password: "senha123"
             }
         }
@@ -42,7 +41,7 @@ module.exports = (app) => {
         }
     */);
 
-    app.get('/user', userController.getAllUsers
+    app.get('/getUser', userController.getAllUsers
     /*
         #swagger.tags = ["Usuários"]
         #swagger.summary = "Obtém todos os usuários"
@@ -83,7 +82,7 @@ module.exports = (app) => {
         }
     */);
 
-    app.get('/user/:id', userController.getUser
+    app.get('/getUser/:id', userController.getUser
     /*
         #swagger.tags = ["Usuários"]
         #swagger.summary = "Obtém um usuário pelo ID"

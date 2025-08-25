@@ -1,4 +1,3 @@
-const { userInfo } = require('os');
 const db = require('../configs/pg');
 
 const findByDocumneto = async (documento) => {
@@ -7,7 +6,7 @@ const findByDocumneto = async (documento) => {
         FROM t_usuario u
         INNER JOIN t_user_type t ON u.user_tipo = t.user_type_id
         WHERE u.user_doumento = $1
-    `;
+`;
     const result = await db.query(sql, [documento]);
     return result.rows.length ? result.rows[0] : null;
 };
@@ -37,7 +36,10 @@ const createUser = async ({ user_username, user_email, user_documento, user_pass
 };
 
 const getAll = async () => {
-    const sql = `SELECT * FORM t_usuario`;
+    const sql = `
+        SELECT user_id, user_username, user_email, user_documento, user_tipo
+        FROM t_usuario
+    `;
     const result = await db.query(sql);
     return result.rows;
 };
@@ -48,7 +50,7 @@ const getById = async (user_id) => {
         FROM t_usuario
         WHERE user_id = $1
     `;
-    const result = await db.query(sql [user_id]);
+    const result = await db.query(sql, [user_id]);
     return result.rows.length ? result.rows[0] : null;
 };
 
@@ -61,17 +63,21 @@ const updateUser = async (user_id, fields) => {
         if (value !== undefined) {
             setClauses.push(`${key} = $${index}`);
             values.push(value);
+            index++;
         }
     }
+
     if (setClauses.length === 0) return false;
 
+    console.log(setClauses)
+    console.log(values)
     values.push(user_id);
     const sql = `
         UPDATE t_usuario
         SET ${setClauses.join(', ')}
         WHERE user_id = $${index}
     `;
-
+    console.log(sql)
     const result = await db.query(sql, values);
     return result.rowCount > 0;
 };
