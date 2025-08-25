@@ -226,6 +226,9 @@
               }
             }
           },
+          "401": {
+            "description": "Não autorizado"
+          },
           "403": {
             "description": "Acesso negado",
             "schema": {
@@ -353,6 +356,9 @@
               }
             }
           },
+          "401": {
+            "description": "Não autorizado"
+          },
           "404": {
             "description": "Usuário não encontrado",
             "schema": {
@@ -392,24 +398,23 @@
           "Login"
         ],
         "summary": "Realiza o login do usuário",
-        "description": "Realiza o login do usuário com as credenciais fornecidas.",
+        "description": "Realiza o login do usuário com as credenciais fornecidas. Se as credenciais estiverem corretas, retorna status de sucesso e define um cookie httpOnly chamado access_token para autenticação nas próximas requisições.",
         "parameters": [
-          {
-            "name": "authorization",
-            "in": "header",
-            "type": "string"
-          },
           {
             "name": "body",
             "in": "body",
+            "description": "Dados do novo usuário",
+            "required": true,
             "schema": {
               "type": "object",
               "properties": {
-                "user_doc": {
-                  "example": "any"
+                "user_documento": {
+                  "type": "string",
+                  "example": "12345678900"
                 },
                 "user_password": {
-                  "example": "any"
+                  "type": "string",
+                  "example": "senha123"
                 }
               }
             }
@@ -417,13 +422,122 @@
         ],
         "responses": {
           "201": {
-            "description": "Criado"
+            "description": "Login realizado com sucesso",
+            "headers": {
+              "Set-Cookie": {
+                "description": "Cookie httpOnly com o token de acesso",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "example": "Logado com Sucesso!"
+                },
+                "usuario": {
+                  "type": "string",
+                  "example": "12345678900"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
           },
           "400": {
-            "description": "Solicitação Inválida"
+            "description": "Usuário ou senha não informados",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "example": "object"
+                },
+                "properties": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "example": "string"
+                        }
+                      }
+                    },
+                    "message": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "example": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "401": {
+            "description": "Credenciais inválidas",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "example": "object"
+                },
+                "properties": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "example": "string"
+                        }
+                      }
+                    },
+                    "message": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "example": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
           },
           "500": {
-            "description": "Erro Interno do Servidor"
+            "description": "Erro interno do servidor",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Erro interno"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
           }
         }
       }

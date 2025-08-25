@@ -1,7 +1,7 @@
 const { verifyAccess } = require('./utils');
 
 module.exports = function requireAuth(req, res, next) {
-    const tolen = req.cookies?.access_token;
+    const token = req.cookies?.access_token;
     if (!token) return res.status(401).json({ message: 'Não Autenticado' });
 
     try {
@@ -11,4 +11,4 @@ module.exports = function requireAuth(req, res, next) {
     } catch {
         return res.status(401).json({ message: 'Token inválido ou Expirado' });
     }
-};
+}

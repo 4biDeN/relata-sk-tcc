@@ -1,4 +1,5 @@
 const userController = require('../controllers/user_controller');
+const requireAuth = require('../auth/requireAuth');
 
 module.exports = (app) => {
     app.post('/user', userController.createUser
@@ -41,7 +42,7 @@ module.exports = (app) => {
         }
     */);
 
-    app.get('/getUser', userController.getAllUsers
+    app.get('/getUser', requireAuth, userController.getAllUsers
     /*
         #swagger.tags = ["Usuários"]
         #swagger.summary = "Obtém todos os usuários"
@@ -82,7 +83,7 @@ module.exports = (app) => {
         }
     */);
 
-    app.get('/getUser/:id', userController.getUser
+    app.get('/getUser/:id', requireAuth, userController.getUser
     /*
         #swagger.tags = ["Usuários"]
         #swagger.summary = "Obtém um usuário pelo ID"
@@ -129,7 +130,7 @@ module.exports = (app) => {
         }
     */);
 
-    app.put('/user/:id', userController.updateUser
+    app.put('/user/:id', requireAuth, userController.updateUser
     /*
         #swagger.tags = ["Usuários"]
         #swagger.summary = "Atualiza os dados de um usuário"

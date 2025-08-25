@@ -37,7 +37,7 @@ const createUser = async ({ user_username, user_email, user_documento, user_pass
 
 const getAll = async () => {
     const sql = `
-        SELECT user_id, user_username, user_email, user_documento, user_tipo
+        SELECT user_id, user_username, user_email, user_documento, user_tipo, user_token_version
         FROM t_usuario
     `;
     const result = await db.query(sql);
@@ -46,7 +46,7 @@ const getAll = async () => {
 
 const getById = async (user_id) => {
     const sql = `
-        SELECT user_id, user_username, user_email, user_documento, user_tipo
+        SELECT user_id, user_username, user_email, user_documento, user_tipo, user_token_version
         FROM t_usuario
         WHERE user_id = $1
     `;
