@@ -1,6 +1,6 @@
 const db = require('../configs/pg')
 const jwt = require('jsonwebtoken')
-const cript = require('../utils/salt')
+const cript = require('../auth/salt')
 
 const getUserLogin_sql = 
 `

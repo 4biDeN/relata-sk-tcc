@@ -1,5 +1,5 @@
 const crypt = require('../utils/salt');
-const userRepo = require('../repo/user_repo');
+const userRepo = require('../repo/userRepo');
 
 const newUser = async (params) => {
     const { user_username, user_email, user_documento, user_password } = params;

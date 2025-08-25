@@ -1,5 +1,5 @@
 const loginService = require('../services/login')
-const { cookieOptions } = require('../auth/utils')
+const { cookieOptions } = require('../auth/jwt')
 
 const login = async (req, res) => {
     const { user_doc, user_password } = req.body;

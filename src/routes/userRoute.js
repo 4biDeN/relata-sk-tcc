@@ -1,4 +1,4 @@
-const userController = require('../controllers/user_controller');
+const userController = require('../controllers/userController');
 const requireAuth = require('../auth/requireAuth');
 
 module.exports = (app) => {

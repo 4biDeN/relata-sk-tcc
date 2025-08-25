@@ -1,4 +1,4 @@
-const { verifyAccess } = require('./utils');
+const { verifyAccess } = require('./jwt');
 
 module.exports = function requireAuth(req, res, next) {
     const token = req.cookies?.access_token;
