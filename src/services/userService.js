@@ -1,4 +1,4 @@
-const crypt = require('../utils/salt');
+const crypt = require('../auth/salt');
 const userRepo = require('../repo/userRepo');
 
 const newUser = async (params) => {

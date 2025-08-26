@@ -1,6 +1,5 @@
 FROM node:21-alpine
 
-
 ENV TZ=America/Sao_Paulo
 
 RUN mkdir -p /usr/src/app

@@ -17,6 +17,156 @@
     "application/json"
   ],
   "paths": {
+    "/login": {
+      "post": {
+        "tags": [
+          "Login"
+        ],
+        "summary": "Realiza o login do usuário",
+        "description": "Realiza o login do usuário com as credenciais fornecidas. Se as credenciais estiverem corretas, retorna status de sucesso e define um cookie httpOnly chamado access_token para autenticação nas próximas requisições.",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "description": "Dados do novo usuário",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "user_documento": {
+                  "type": "string",
+                  "example": "12345678900"
+                },
+                "user_password": {
+                  "type": "string",
+                  "example": "senha123"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Login realizado com sucesso",
+            "headers": {
+              "Set-Cookie": {
+                "description": "Cookie httpOnly com o token de acesso",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "example": "Logado com Sucesso!"
+                },
+                "usuario": {
+                  "type": "string",
+                  "example": "12345678900"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "400": {
+            "description": "Usuário ou senha não informados",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "example": "object"
+                },
+                "properties": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "example": "string"
+                        }
+                      }
+                    },
+                    "message": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "example": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "401": {
+            "description": "Credenciais inválidas",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "example": "object"
+                },
+                "properties": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "example": "string"
+                        }
+                      }
+                    },
+                    "message": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "example": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno do servidor",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Erro interno"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          }
+        }
+      }
+    },
     "/user": {
       "post": {
         "tags": [
@@ -392,29 +542,37 @@
         }
       }
     },
-    "/login": {
+    "/reclamacao": {
       "post": {
         "tags": [
-          "Login"
+          "Reclamações"
         ],
-        "summary": "Realiza o login do usuário",
-        "description": "Realiza o login do usuário com as credenciais fornecidas. Se as credenciais estiverem corretas, retorna status de sucesso e define um cookie httpOnly chamado access_token para autenticação nas próximas requisições.",
+        "summary": "Cria uma nova reclamação",
+        "description": "Cria uma nova reclamação com os dados fornecidos. Requer autenticação.",
         "parameters": [
           {
             "name": "body",
             "in": "body",
-            "description": "Dados do novo usuário",
+            "description": "Dados da nova reclamação",
             "required": true,
             "schema": {
               "type": "object",
               "properties": {
-                "user_documento": {
+                "reclamacao_titulo": {
                   "type": "string",
-                  "example": "12345678900"
+                  "example": "Título da Reclamação"
                 },
-                "user_password": {
+                "reclmamacao_descricao": {
                   "type": "string",
-                  "example": "senha123"
+                  "example": "Descrição detalhada da reclamação"
+                },
+                "reclamacao_status": {
+                  "type": "number",
+                  "example": 1
+                },
+                "reclamacao_user_id": {
+                  "type": "number",
+                  "example": 1
                 }
               }
             }
@@ -422,25 +580,29 @@
         ],
         "responses": {
           "201": {
-            "description": "Login realizado com sucesso",
-            "headers": {
-              "Set-Cookie": {
-                "description": "Cookie httpOnly com o token de acesso",
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
+            "description": "Reclamação criada com sucesso",
             "schema": {
               "type": "object",
               "properties": {
-                "status": {
-                  "type": "string",
-                  "example": "Logado com Sucesso!"
+                "reclamacao_id": {
+                  "type": "number",
+                  "example": 1
                 },
-                "usuario": {
+                "reclamacao_titulo": {
                   "type": "string",
-                  "example": "12345678900"
+                  "example": "Título da Reclamação"
+                },
+                "reclmamacao_descricao": {
+                  "type": "string",
+                  "example": "Descrição detalhada da reclamação"
+                },
+                "reclamacao_status": {
+                  "type": "number",
+                  "example": 1
+                },
+                "reclamacao_user_id": {
+                  "type": "number",
+                  "example": 1
                 }
               },
               "xml": {
@@ -449,36 +611,13 @@
             }
           },
           "400": {
-            "description": "Usuário ou senha não informados",
+            "description": "Dados inválidos",
             "schema": {
               "type": "object",
               "properties": {
-                "type": {
+                "mensagem": {
                   "type": "string",
-                  "example": "object"
-                },
-                "properties": {
-                  "type": "object",
-                  "properties": {
-                    "type": {
-                      "type": "object",
-                      "properties": {
-                        "type": {
-                          "type": "string",
-                          "example": "string"
-                        }
-                      }
-                    },
-                    "message": {
-                      "type": "object",
-                      "properties": {
-                        "type": {
-                          "type": "string",
-                          "example": "string"
-                        }
-                      }
-                    }
-                  }
+                  "example": "Erro de validação nos dados fornecidos"
                 }
               },
               "xml": {
@@ -487,36 +626,13 @@
             }
           },
           "401": {
-            "description": "Credenciais inválidas",
+            "description": "Não autorizado",
             "schema": {
               "type": "object",
               "properties": {
-                "type": {
+                "mensagem": {
                   "type": "string",
-                  "example": "object"
-                },
-                "properties": {
-                  "type": "object",
-                  "properties": {
-                    "type": {
-                      "type": "object",
-                      "properties": {
-                        "type": {
-                          "type": "string",
-                          "example": "string"
-                        }
-                      }
-                    },
-                    "message": {
-                      "type": "object",
-                      "properties": {
-                        "type": {
-                          "type": "string",
-                          "example": "string"
-                        }
-                      }
-                    }
-                  }
+                  "example": "Token de autenticação inválido ou ausente"
                 }
               },
               "xml": {
@@ -529,9 +645,118 @@
             "schema": {
               "type": "object",
               "properties": {
-                "message": {
+                "mensagem": {
                   "type": "string",
-                  "example": "Erro interno"
+                  "example": "Erro ao criar reclamação"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reclamacao/{reclamacao_id}": {
+      "get": {
+        "tags": [
+          "Reclamações"
+        ],
+        "summary": "Obtém uma reclamação pelo ID",
+        "description": "Recupera os detalhes de uma reclamação específica usando seu ID. Requer autenticação.",
+        "parameters": [
+          {
+            "name": "reclamacao_id",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "description": "ID da reclamação a ser recuperada"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reclamação recuperada com sucesso",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "total": {
+                  "type": "number",
+                  "example": 1
+                },
+                "reclamacoes": {
+                  "type": "object",
+                  "properties": {
+                    "reclamacao_id": {
+                      "type": "number",
+                      "example": 1
+                    },
+                    "reclamacao_titulo": {
+                      "type": "string",
+                      "example": "Título da Reclamação"
+                    },
+                    "reclmamacao_descricao": {
+                      "type": "string",
+                      "example": "Descrição detalhada da reclamação"
+                    },
+                    "reclamacao_data": {
+                      "type": "string",
+                      "example": "2023-10-01T12:34:56.789Z"
+                    },
+                    "reclamacao_status_nome": {
+                      "type": "string",
+                      "example": "Aberto"
+                    },
+                    "user_username": {
+                      "type": "string",
+                      "example": "usuario_exemplo"
+                    }
+                  }
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "401": {
+            "description": "Não autorizado",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "mensagem": {
+                  "type": "string",
+                  "example": "Token de autenticação inválido ou ausente"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "404": {
+            "description": "Reclamação não encontrada",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "mensagem": {
+                  "type": "string",
+                  "example": "Reclamação não encontrada"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno do servidor",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "mensagem": {
+                  "type": "string",
+                  "example": "Erro ao recuperar reclamação"
                 }
               },
               "xml": {

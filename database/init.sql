@@ -60,3 +60,10 @@ ON DELETE CASCADE;
 INSERT INTO t_user_type (user_type_name) VALUES
 ('Cidadão'),
 ('Administrador');
+
+INSERT INTO t_reclamacao_status (reclamacao_status_nome) VALUES
+('Aberto'),
+('Em Análise'),
+('Em Andamento'),
+('Resolvido'),
+('Fechado');
