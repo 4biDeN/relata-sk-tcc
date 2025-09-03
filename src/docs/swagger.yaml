@@ -738,6 +738,65 @@
           }
         }
       }
+    },
+    "/reclamacoes/user/{user_id}": {
+      "get": {
+        "tags": [
+          "Reclamações"
+        ],
+        "summary": "Buscar reclamações por usuário",
+        "description": "Retorna todas as reclamações feitas por um usuário específico.",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "ID do usuário"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de reclamações do usuário",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "reclamacao_id": {
+                    "type": "number",
+                    "example": 10
+                  },
+                  "reclamacao_titulo": {
+                    "type": "string",
+                    "example": "Buraco na rua"
+                  },
+                  "reclamacao_data": {
+                    "type": "string",
+                    "example": "2025-09-02T15:25:00.000Z"
+                  },
+                  "reclamacao_status": {
+                    "type": "number",
+                    "example": 1
+                  }
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "401": {
+            "description": "Não autorizado"
+          },
+          "404": {
+            "description": "Não Encontrado"
+          },
+          "500": {
+            "description": "Erro Interno do Servidor"
+          }
+        }
+      }
     }
   }
 }

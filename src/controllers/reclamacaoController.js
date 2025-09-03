@@ -21,7 +21,20 @@ const getReclamacaoById = async (req, res) => {
     }
 };
 
+const getReclamacaoByUser = async (req, res) => {
+    try {
+        const reclamacoes = await reclamacaoService.getReclamacaoByUser(req.params.user_id);
+        if (!reclamacoes || reclamacoes.length === 0) {
+            return res.status(404).json({ message: 'Nenhuma reclamação encontrada para este usuário' });
+        }
+        res.status(200).json(reclamacoes);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
 module.exports = {
     createReclamacao,
-    getReclamacaoById
+    getReclamacaoById,
+    getReclamacaoByUser
 };

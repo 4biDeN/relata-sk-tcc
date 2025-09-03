@@ -55,7 +55,32 @@ const getReclamacaoById = async (reclamacao_id) => {
     return result.rows.length ? result.rows[0] : null;
 };
 
+const getReclamacaoByUser = async (userd_id) => {
+    const sql = `
+    select
+        r.reclamacao_id,
+        r.reclamacao_titulo,
+        r.reclamacao_data,
+        r.reclamacao_status
+    from t_reclamacao r
+    where r.reclamacao_user_id = $1
+    `
+    const result = await db.query(sql, [userd_id]);
+    return result.rows.length ? result.rows : null;
+}
+
+const deleteReclamacao = async (reclamacao_id) => {
+    const sql = `
+    uptate t_reclamacao
+        set reclamcao_excluida = true
+    where reclamacao_id = $1
+    `
+    await db.query(sql, [reclamacao_id]);
+}
+
 module.exports = {
     createReclamacao,
-    getReclamacaoById
+    getReclamacaoById,
+    getReclamacaoByUser,
+    deleteReclamacao
 };

@@ -82,4 +82,44 @@ module.exports = (app) => {
             schema: { mensagem: 'Token de autenticação inválido ou ausente' }
         }
     */);
+    app.get('/reclamacoes/user/:user_id', requireAuth, reclamacaoController.getReclamacaoByUser
+    /*
+        #swagger.tags = ['Reclamações']
+        #swagger.summary = 'Buscar reclamações por usuário'
+        #swagger.description = 'Retorna todas as reclamações feitas por um usuário específico.'
+        #swagger.parameters['user_id'] = {
+            in: 'path',
+            description: 'ID do usuário',
+            required: true
+        }
+        #swagger.responses[200] = {
+            description: 'Lista de reclamações do usuário',
+            schema: [
+                {
+                    reclamacao_id: 10,
+                    reclamacao_titulo: "Buraco na rua",
+                    reclamacao_data: "2025-09-02T15:25:00.000Z",
+                    reclamacao_status: 1
+                }
+            ]
+        }
+    */);
+    app.delete('/reclamacoes/:id', requireAuth, reclamacaoController.deleteReclamacao
+    /*
+        #swagger.tags = ['Reclamações']
+        #swagger.summary = 'Deletar uma reclamação'
+        #swagger.description = 'Marca uma reclamação como excluída pelo seu ID.'
+        #swagger.parameters['id'] = {
+            in: 'path',
+            description: 'ID da reclamação',
+            required: true
+        }
+        #swagger.responses[204] = {
+            description: 'Reclamação deletada com sucesso'
+        }
+        #swagger.responses[401] = {
+            description: 'Não autorizado',
+            schema: { mensagem: 'Token de autenticação inválido ou ausente' }
+        }
+    */);
 };

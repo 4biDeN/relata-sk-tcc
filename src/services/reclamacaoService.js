@@ -23,7 +23,17 @@ const getReclamacaoById = async (id) => {
      return await reclamacaoRepo.getReclamacaoById(id); 
 };
 
+const getReclamacaoByUser = async (user_id) => {
+    return await reclamacaoRepo.getReclamacaoByUser(user_id); 
+}
+
+const deleteReclamacao = async (reclamacao_id) => {
+    await reclamacaoRepo.deleteReclamacao(reclamacao_id);
+}
+
 module.exports = {
     createReclamacao,
-    getReclamacaoById
+    getReclamacaoById,
+    getReclamacaoByUser,
+    deleteReclamacao
 };
