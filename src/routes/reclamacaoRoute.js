@@ -2,104 +2,84 @@ const reclamacaoController = require('../controllers/reclamacaoController');
 const requireAuth = require('../auth/requireAuth');
 
 module.exports = (app) => {
-    app.post('/reclamacao', requireAuth, reclamacaoController.createReclamacao
+    app.post('/reclamacoes', requireAuth, reclamacaoController.createReclamacao
     /*
-        #swagger.tags = ["Reclamações"]
-        #swagger.summary = "Cria uma nova reclamação"
-        #swagger.description = 'Cria uma nova reclamação com os dados fornecidos. Requer autenticação.'
+        #swagger.tags = ['Reclamações']
+        #swagger.summary = 'Criar uma nova reclamação'
+        #swagger.description = 'Endpoint para registrar uma reclamação vinculada a um local e a um usuário.'
 
         #swagger.parameters['body'] = {
             in: 'body',
-            description: 'Dados da nova reclamação',
+            description: 'Dados da reclamação',
             required: true,
             schema: {
-                reclamacao_titulo: "Título da Reclamação",
-                reclmamacao_descricao: "Descrição detalhada da reclamação",
-                reclamacao_status: 1,
-                reclamacao_user_id: 1
+                reclamacao_user_id: 1,
+                reclamacao_titulo: "Buraco na rua",
+                reclamacao_descricao: "Existe um buraco grande na Rua das Flores",
+                reclamacao_prioridade: 2,
+                local: {
+                    local_cidade: "Saudades",
+                    local_estado: "SC",
+                    local_bairro: "Centro",
+                    local_rua: "Rua das Flores",
+                    local_complemento: "Próximo ao mercado",
+                    local_latitude: -27.1362,
+                    local_longitude: -53.0022
+                }
             }
         }
 
         #swagger.responses[201] = {
             description: 'Reclamação criada com sucesso',
             schema: {
-                reclamacao_id: 1,
-                reclamacao_titulo: "Título da Reclamação",
-                reclmamacao_descricao: "Descrição detalhada da reclamação",
-                reclamacao_status: 1,
-                reclamacao_user_id: 1
+                reclamacao_id: 10,
+                reclamacao_protocolo: "2025-000010",
+                reclamacao_titulo: "Buraco na rua",
+                reclamacao_descricao: "Existe um buraco grande na Rua das Flores"
             }
         }
 
         #swagger.responses[400] = {
-            description: 'Dados inválidos',
-            schema: {
-                mensagem: 'Erro de validação nos dados fornecidos'
-            }
+            description: 'Erro de validação ou dados inválidos'
         }
 
         #swagger.responses[401] = {
             description: 'Não autorizado',
-            schema: {
-                mensagem: 'Token de autenticação inválido ou ausente'
-            }
-        }
-
-        #swagger.responses[500] = {
-            description: 'Erro interno do servidor',
-            schema: {
-                mensagem: 'Erro ao criar reclamação'
-            }
+            schema: { mensagem: 'Token de autenticação inválido ou ausente' }
         }
     */);
 
-    app.get('/reclamacao/:reclamacao_id', requireAuth, reclamacaoController.getReclamacaoById
+    app.get('/reclamacoes/:id', requireAuth, reclamacaoController.getReclamacaoById
     /*
-        #swagger.tags = ["Reclamações"]
-        #swagger.summary = "Obtém uma reclamação pelo ID"
-        #swagger.description = 'Recupera os detalhes de uma reclamação específica usando seu ID. Requer autenticação.'
+        #swagger.tags = ['Reclamações']
+        #swagger.summary = 'Buscar uma reclamação'
+        #swagger.description = 'Retorna os detalhes de uma reclamação pelo seu ID.'
 
-        #swagger.parameters['reclamacao_id'] = {
+        #swagger.parameters['id'] = {
             in: 'path',
-            description: 'ID da reclamação a ser recuperada',
-            required: true,
-            type: 'integer'
+            description: 'ID da reclamação',
+            required: true
         }
 
         #swagger.responses[200] = {
-            description: 'Reclamação recuperada com sucesso',
+            description: 'Dados da reclamação',
             schema: {
-                total: 1,
-                reclamacoes: {
-                    reclamacao_id: 1,
-                    reclamacao_titulo: "Título da Reclamação",
-                    reclmamacao_descricao: "Descrição detalhada da reclamação",
-                    reclamacao_data: "2023-10-01T12:34:56.789Z",
-                    reclamacao_status_nome: "Aberto",
-                    user_username: "usuario_exemplo"
-                }
-            }
-        }
-
-        #swagger.responses[401] = {
-            description: 'Não autorizado',
-            schema: {
-                mensagem: 'Token de autenticação inválido ou ausente'
+                reclamacao_id: 10,
+                reclamacao_titulo: "Buraco na rua",
+                reclamacao_descricao: "Existe um buraco grande na Rua das Flores",
+                reclamacao_data: "2025-09-02T15:25:00.000Z",
+                reclamacao_status_nome: "Aberta",
+                user_username: "joao.silva"
             }
         }
 
         #swagger.responses[404] = {
-            description: 'Reclamação não encontrada',
-            schema: {
-                mensagem: 'Reclamação não encontrada'
-            }
+            description: 'Reclamação não encontrada'
         }
 
-        #swagger.responses[500] = {
-            description: 'Erro interno do servidor',
-            schema: {
-                mensagem: 'Erro ao recuperar reclamação'
-            }
+        #swagger.responses[401] = {
+            description: 'Não autorizado',
+            schema: { mensagem: 'Token de autenticação inválido ou ausente' }
         }
     */);
 };

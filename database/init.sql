@@ -41,7 +41,6 @@ create table if not exists t_local (
     local_estado char(2) not null,
     local_bairro varchar(50) not null,
     local_rua varchar(100) not null,
-    local_numero varchar(10) not null,
     local_complemento varchar(100),
     local_latitude decimal(10, 8),
     local_longitude decimal(11, 8)

@@ -542,37 +542,70 @@
         }
       }
     },
-    "/reclamacao": {
+    "/reclamacoes": {
       "post": {
         "tags": [
           "Reclamações"
         ],
-        "summary": "Cria uma nova reclamação",
-        "description": "Cria uma nova reclamação com os dados fornecidos. Requer autenticação.",
+        "summary": "Criar uma nova reclamação",
+        "description": "Endpoint para registrar uma reclamação vinculada a um local e a um usuário.",
         "parameters": [
           {
             "name": "body",
             "in": "body",
-            "description": "Dados da nova reclamação",
+            "description": "Dados da reclamação",
             "required": true,
             "schema": {
               "type": "object",
               "properties": {
-                "reclamacao_titulo": {
-                  "type": "string",
-                  "example": "Título da Reclamação"
-                },
-                "reclmamacao_descricao": {
-                  "type": "string",
-                  "example": "Descrição detalhada da reclamação"
-                },
-                "reclamacao_status": {
-                  "type": "number",
-                  "example": 1
-                },
                 "reclamacao_user_id": {
                   "type": "number",
                   "example": 1
+                },
+                "reclamacao_titulo": {
+                  "type": "string",
+                  "example": "Buraco na rua"
+                },
+                "reclamacao_descricao": {
+                  "type": "string",
+                  "example": "Existe um buraco grande na Rua das Flores"
+                },
+                "reclamacao_prioridade": {
+                  "type": "number",
+                  "example": 2
+                },
+                "local": {
+                  "type": "object",
+                  "properties": {
+                    "local_cidade": {
+                      "type": "string",
+                      "example": "Saudades"
+                    },
+                    "local_estado": {
+                      "type": "string",
+                      "example": "SC"
+                    },
+                    "local_bairro": {
+                      "type": "string",
+                      "example": "Centro"
+                    },
+                    "local_rua": {
+                      "type": "string",
+                      "example": "Rua das Flores"
+                    },
+                    "local_complemento": {
+                      "type": "string",
+                      "example": "Próximo ao mercado"
+                    },
+                    "local_latitude": {
+                      "type": "number",
+                      "example": -27.1362
+                    },
+                    "local_longitude": {
+                      "type": "number",
+                      "example": -53.0022
+                    }
+                  }
                 }
               }
             }
@@ -586,23 +619,19 @@
               "properties": {
                 "reclamacao_id": {
                   "type": "number",
-                  "example": 1
+                  "example": 10
+                },
+                "reclamacao_protocolo": {
+                  "type": "string",
+                  "example": "2025-000010"
                 },
                 "reclamacao_titulo": {
                   "type": "string",
-                  "example": "Título da Reclamação"
+                  "example": "Buraco na rua"
                 },
-                "reclmamacao_descricao": {
+                "reclamacao_descricao": {
                   "type": "string",
-                  "example": "Descrição detalhada da reclamação"
-                },
-                "reclamacao_status": {
-                  "type": "number",
-                  "example": 1
-                },
-                "reclamacao_user_id": {
-                  "type": "number",
-                  "example": 1
+                  "example": "Existe um buraco grande na Rua das Flores"
                 }
               },
               "xml": {
@@ -611,19 +640,7 @@
             }
           },
           "400": {
-            "description": "Dados inválidos",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "mensagem": {
-                  "type": "string",
-                  "example": "Erro de validação nos dados fornecidos"
-                }
-              },
-              "xml": {
-                "name": "main"
-              }
-            }
+            "description": "Erro de validação ou dados inválidos"
           },
           "401": {
             "description": "Não autorizado",
@@ -641,77 +658,56 @@
             }
           },
           "500": {
-            "description": "Erro interno do servidor",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "mensagem": {
-                  "type": "string",
-                  "example": "Erro ao criar reclamação"
-                }
-              },
-              "xml": {
-                "name": "main"
-              }
-            }
+            "description": "Erro Interno do Servidor"
           }
         }
       }
     },
-    "/reclamacao/{reclamacao_id}": {
+    "/reclamacoes/{id}": {
       "get": {
         "tags": [
           "Reclamações"
         ],
-        "summary": "Obtém uma reclamação pelo ID",
-        "description": "Recupera os detalhes de uma reclamação específica usando seu ID. Requer autenticação.",
+        "summary": "Buscar uma reclamação",
+        "description": "Retorna os detalhes de uma reclamação pelo seu ID.",
         "parameters": [
           {
-            "name": "reclamacao_id",
+            "name": "id",
             "in": "path",
             "required": true,
-            "type": "integer",
-            "description": "ID da reclamação a ser recuperada"
+            "type": "string",
+            "description": "ID da reclamação"
           }
         ],
         "responses": {
           "200": {
-            "description": "Reclamação recuperada com sucesso",
+            "description": "Dados da reclamação",
             "schema": {
               "type": "object",
               "properties": {
-                "total": {
+                "reclamacao_id": {
                   "type": "number",
-                  "example": 1
+                  "example": 10
                 },
-                "reclamacoes": {
-                  "type": "object",
-                  "properties": {
-                    "reclamacao_id": {
-                      "type": "number",
-                      "example": 1
-                    },
-                    "reclamacao_titulo": {
-                      "type": "string",
-                      "example": "Título da Reclamação"
-                    },
-                    "reclmamacao_descricao": {
-                      "type": "string",
-                      "example": "Descrição detalhada da reclamação"
-                    },
-                    "reclamacao_data": {
-                      "type": "string",
-                      "example": "2023-10-01T12:34:56.789Z"
-                    },
-                    "reclamacao_status_nome": {
-                      "type": "string",
-                      "example": "Aberto"
-                    },
-                    "user_username": {
-                      "type": "string",
-                      "example": "usuario_exemplo"
-                    }
-                  }
+                "reclamacao_titulo": {
+                  "type": "string",
+                  "example": "Buraco na rua"
+                },
+                "reclamacao_descricao": {
+                  "type": "string",
+                  "example": "Existe um buraco grande na Rua das Flores"
+                },
+                "reclamacao_data": {
+                  "type": "string",
+                  "example": "2025-09-02T15:25:00.000Z"
+                },
+                "reclamacao_status_nome": {
+                  "type": "string",
+                  "example": "Aberta"
+                },
+                "user_username": {
+                  "type": "string",
+                  "example": "joao.silva"
                 }
               },
               "xml": {
@@ -735,34 +731,10 @@
             }
           },
           "404": {
-            "description": "Reclamação não encontrada",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "mensagem": {
-                  "type": "string",
-                  "example": "Reclamação não encontrada"
-                }
-              },
-              "xml": {
-                "name": "main"
-              }
-            }
+            "description": "Reclamação não encontrada"
           },
           "500": {
-            "description": "Erro interno do servidor",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "mensagem": {
-                  "type": "string",
-                  "example": "Erro ao recuperar reclamação"
-                }
-              },
-              "xml": {
-                "name": "main"
-              }
-            }
+            "description": "Erro Interno do Servidor"
           }
         }
       }

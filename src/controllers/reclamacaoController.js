@@ -11,8 +11,7 @@ const createReclamacao = async (req, res) => {
 
 const getReclamacaoById = async (req, res) => {
     try {
-        const { reclamacao_id } = req.params;
-        const reclamacao = await reclamacaoService.getReclamacaoById(reclamacao_id);
+        const reclamacao = await reclamacaoService.getReclamacaoById(req.params.id);
         if (!reclamacao) {
             return res.status(404).json({ message: 'Reclamação não encontrada' });
         }
