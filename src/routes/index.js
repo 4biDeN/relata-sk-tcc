@@ -1,10 +1,10 @@
 const User = require('./userRoute')
 const Login = require('./login')
-const Reclamacao = require('./reclamacaoRoute')
+const Ocorrencias = require('./ocorrenciaRoute')
 
 
 module.exports = (app) => {
     Login(app)
     User(app)
-    Reclamacao(app)
+    Ocorrencias(app)
 };

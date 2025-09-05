@@ -25,14 +25,14 @@ create table if not exists t_usuario (
 );
 
 -- criação da tabela de status de reclamação
-create table if not exists t_reclamacao_status (
-    reclamacao_status_id serial primary key,
-    reclamacao_status_nome text not null unique
+create table if not exists t_ocorrencia_status (
+    ocorrencia_status_id serial primary key,
+    ocorrencia_status_nome text not null unique
 );
 
-create table if not exists t_reclamacao_prioridade (
-    reclamacao_prioridade_id smallserial primary key,
-    reclamacao_prioridade_nome text not null unique
+create table if not exists t_ocorrencia_prioridade (
+    ocorrencia_prioridade_id smallserial primary key,
+    ocorrencia_prioridade_nome text not null unique
 );
 
 create table if not exists t_local (
@@ -46,31 +46,31 @@ create table if not exists t_local (
     local_longitude decimal(11, 8)
 );
 -- criação da tabela de reclamações
-create table t_reclamacao (
-    reclamacao_id serial primary key,
-    reclamacao_user_id integer not null references t_usuario(user_id),
-    reclamacao_protocolo text unique,
-    reclamacao_titulo text not null,
-    reclamacao_descricao text not null,
-    reclamacao_data timestamp default current_timestamp,
-    reclamacao_status integer not null default 1 references t_reclamacao_status(reclamacao_status_id),
-    reclamacao_local_id integer references t_local(local_id),
-    reclamacao_prioridade smallint not null default 2 references t_reclamacao_prioridade(reclamacao_prioridade_id),
+create table if not exists t_ocorrencia (
+    ocorrencia_id serial primary key,
+    ocorrencia_user_id integer not null references t_usuario(user_id),
+    ocorrencia_protocolo text unique,
+    ocorrencia_titulo text not null,
+    ocorrencia_descricao text not null,
+    ocorrencia_data timestamp default current_timestamp,
+    ocorrencia_status integer not null default 1 references t_ocorrencia_status(ocorrencia_status_id),
+    ocorrencia_local_id integer references t_local(local_id),
+    ocorrencia_prioridade smallint not null default 2 references t_ocorrencia_prioridade(ocorrencia_prioridade_id),
     updated_at timestamp not null default current_timestamp,
-    reclamacao_excluida boolean not null default false,
-    reclamacao_tsv tsvector
+    ocorrencia_excluida boolean not null default false,
+    ocorrencia_tsv tsvector
 );
 
-create table if not exists t_reclamacao_status_historico (
-    reclamacao_status_historico_id bigserial primary key,
-    reclamacao_id integer not null references t_reclamacao(reclamacao_id),
-    reclamacao_status_id integer not null references t_reclamacao_status(reclamacao_status_id),
+create table if not exists t_ocorrencia_status_historico (
+    ocorrencia_status_historico_id bigserial primary key,
+    ocorrencia_id integer not null references t_ocorrencia(ocorrencia_id),
+    ocorrencia_status_id integer not null references t_ocorrencia_status(ocorrencia_status_id),
     data_alteracao timestamp not null default current_timestamp
 );
 
-create table if not exists t_reclamacao_comentario (
+create table if not exists t_ocorrencia_comentario (
     comentario_id bigserial primary key,
-    comentario_reclamacao_id integer not null references t_reclamacao(reclamacao_id),
+    comentario_ocorrencia_id integer not null references t_ocorrencia(ocorrencia_id),
     comentario_user_id integer not null references t_usuario(user_id),
     comentario_texto text not null,
     comentario_data timestamp not null default current_timestamp,
@@ -78,53 +78,53 @@ create table if not exists t_reclamacao_comentario (
 );
 
 -- criação da tabela de imagens de reclamação
-create table t_reclamacao_imagem (
-    reclamacao_imagem_id serial primary key,
-    reclamacao_id integer not null references t_reclamacao(reclamacao_id),
-    reclamacao_imagem_url text not null
+create table t_ocorrencia_imagem (
+    ocorrencia_imagem_id serial primary key,
+    ocorrencia_id integer not null references t_ocorrencia(ocorrencia_id),
+    ocorrencia_imagem_url text not null
 );
 
-update t_reclamacao
-    set reclamacao_tsv = to_tsvector('portuguese',
-        coalesce(reclamacao_titulo, '') || ' ' || coalesce(reclamacao_descricao, ''))
-where reclamacao_tsv is null;
+update t_ocorrencia
+    set ocorrencia_tsv = to_tsvector('portuguese',
+        coalesce(ocorrencia_titulo, '') || ' ' || coalesce(ocorrencia_descricao, ''))
+where ocorrencia_tsv is null;
 
-create index if not exists ix_reclamacao_tsv on t_reclamacao using gin(reclamacao_tsv);
+create index if not exists ix_ocorrencia_tsv on t_ocorrencia using gin(ocorrencia_tsv);
 
-create or replace function trg_reclamacao_tsv_update()
+create or replace function trg_ocorrencia_tsv_update()
 returns trigger as $$
 begin
-    new.reclamacao_tsv := to_tsvector('portuguese',
-        coalesce(new.reclamacao_titulo, '') || ' ' || coalesce(new.reclamacao_descricao, ''));
+    new.ocorrencia_tsv := to_tsvector('portuguese',
+        coalesce(new.ocorrencia_titulo, '') || ' ' || coalesce(new.ocorrencia_descricao, ''));
     return new;
 end
 $$ language plpgsql;
 
-drop trigger if exists tbiu_reclamacao_tsv on t_reclamacao;
-create trigger tbiu_reclamacao_tsv
-before insert or update of reclamacao_titulo, reclamacao_descricao
-on t_reclamacao
-for each row execute function trg_reclamacao_tsv_update();
+drop trigger if exists tbiu_ocorrencia_tsv on t_ocorrencia;
+create trigger tbiu_ocorrencia_tsv
+before insert or update of ocorrencia_titulo, ocorrencia_descricao
+on t_ocorrencia
+for each row execute function trg_ocorrencia_tsv_update();
 
-create sequence if not exists seq_reclamacao_protocolo;
+create sequence if not exists seq_ocorrencia_protocolo;
 
-create or replace function trg_reclamacao_protocolo()
+create or replace function trg_ocorrencia_protocolo()
 returns trigger as $$
 declare
     ano text := to_char(current_date, 'YYYY');
-    seq text := lpad(nextval('seq_reclamacao_protocolo')::text, 6, '0');
+    seq text := lpad(nextval('seq_ocorrencia_protocolo')::text, 6, '0');
 begin
-    if new.reclamacao_protocolo is null then
-        new.reclamacao_protocolo := ano || '-' || seq;
+    if new.ocorrencia_protocolo is null then
+        new.ocorrencia_protocolo := ano || '-' || seq;
     end if;
     return new;
 end
 $$ language plpgsql;
 
-drop trigger if exists tbi_reclamacao_protocolo on t_reclamacao;
-create trigger tbi_reclamacao_protocolo
-before insert on t_reclamacao
-for each row execute function trg_reclamacao_protocolo();
+drop trigger if exists tbi_ocorrencia_protocolo on t_ocorrencia;
+create trigger tbi_ocorrencia_protocolo
+before insert on t_ocorrencia
+for each row execute function trg_ocorrencia_protocolo();
 
 create or replace function set_updated_at()
 returns trigger as $$
@@ -139,13 +139,13 @@ create trigger tbu_usuario_updated_at
 before update on t_usuario
 for each row execute function set_updated_at();
 
-drop trigger if exists tbu_reclamacao_updated_at on t_reclamacao;
-create trigger tbu_reclamacao_updated_at
-before update on t_reclamacao
+drop trigger if exists tbu_ocorrencia_updated_at on t_ocorrencia;
+create trigger tbu_ocorrencia_updated_at
+before update on t_ocorrencia
 for each row execute function set_updated_at();
 
-create index if not exists ix_reclamacao_status_data on t_reclamacao(reclamacao_status, reclamacao_data desc);
-create index if not exists ix_reclamacao_user_data on t_reclamacao(reclamacao_user_id, reclamacao_data desc);
+create index if not exists ix_ocorrencia_status_data on t_ocorrencia(ocorrencia_status, ocorrencia_data desc);
+create index if not exists ix_ocorrencia_user_data on t_ocorrencia(ocorrencia_user_id, ocorrencia_data desc);
 
 create index if not exists ix_local_geo on t_local(local_latitude, local_longitude);
 
@@ -154,19 +154,19 @@ insert into t_user_type (user_type_name) values
 ('Administrador')
 on conflict (user_type_name) do nothing;
 
-insert into t_reclamacao_status (reclamacao_status_nome) values
+insert into t_ocorrencia_status (ocorrencia_status_nome) values
 ('Aberto'),
 ('Em Análise'),
 ('Em Andamento'),
 ('Resolvido'),
 ('Fechado')
-on conflict (reclamacao_status_nome) do nothing;
+on conflict (ocorrencia_status_nome) do nothing;
 
-insert into t_reclamacao_prioridade (reclamacao_prioridade_nome) values
+insert into t_ocorrencia_prioridade (ocorrencia_prioridade_nome) values
 ('Baixa'),
 ('Normal'),
 ('Alta'),
 ('Urgente')
-on conflict (reclamacao_prioridade_nome) do nothing;
+on conflict (ocorrencia_prioridade_nome) do nothing;
 
 COMMIT;

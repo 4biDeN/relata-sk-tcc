@@ -1,9 +1,9 @@
 {
   "swagger": "2.0",
   "info": {
-    "version": "1.0.0",
-    "title": "Reclamask API",
-    "description": "API documentation for Reclamask project"
+    "version": "1.0.1",
+    "title": "Relata Saudades API",
+    "description": "API para o aplicativo Relata Saudades, que permite aos usuários registrar e gerenciar ocorrências em sua cidade."
   },
   "host": "localhost:3000",
   "basePath": "",
@@ -542,35 +542,35 @@
         }
       }
     },
-    "/reclamacoes": {
+    "/ocorrencias": {
       "post": {
         "tags": [
-          "Reclamações"
+          "Ocorrências"
         ],
-        "summary": "Criar uma nova reclamação",
-        "description": "Endpoint para registrar uma reclamação vinculada a um local e a um usuário.",
+        "summary": "Criar uma nova ocorrência",
+        "description": "Endpoint para registrar uma ocorrência vinculada a um local e a um usuário.",
         "parameters": [
           {
             "name": "body",
             "in": "body",
-            "description": "Dados da reclamação",
+            "description": "Dados da ocorrência",
             "required": true,
             "schema": {
               "type": "object",
               "properties": {
-                "reclamacao_user_id": {
+                "ocorrencia_user_id": {
                   "type": "number",
                   "example": 1
                 },
-                "reclamacao_titulo": {
+                "ocorrencia_titulo": {
                   "type": "string",
                   "example": "Buraco na rua"
                 },
-                "reclamacao_descricao": {
+                "ocorrencia_descricao": {
                   "type": "string",
                   "example": "Existe um buraco grande na Rua das Flores"
                 },
-                "reclamacao_prioridade": {
+                "ocorrencia_prioridade": {
                   "type": "number",
                   "example": 2
                 },
@@ -613,23 +613,23 @@
         ],
         "responses": {
           "201": {
-            "description": "Reclamação criada com sucesso",
+            "description": "Ocorrência criada com sucesso",
             "schema": {
               "type": "object",
               "properties": {
-                "reclamacao_id": {
+                "ocorrencia_id": {
                   "type": "number",
                   "example": 10
                 },
-                "reclamacao_protocolo": {
+                "ocorrencia_protocolo": {
                   "type": "string",
                   "example": "2025-000010"
                 },
-                "reclamacao_titulo": {
+                "ocorrencia_titulo": {
                   "type": "string",
                   "example": "Buraco na rua"
                 },
-                "reclamacao_descricao": {
+                "ocorrencia_descricao": {
                   "type": "string",
                   "example": "Existe um buraco grande na Rua das Flores"
                 }
@@ -663,45 +663,45 @@
         }
       }
     },
-    "/reclamacoes/{id}": {
+    "/ocorrencias/{id}": {
       "get": {
         "tags": [
-          "Reclamações"
+          "Ocorrências"
         ],
-        "summary": "Buscar uma reclamação",
-        "description": "Retorna os detalhes de uma reclamação pelo seu ID.",
+        "summary": "Buscar uma ocorrência",
+        "description": "Retorna os detalhes de uma ocorrência pelo seu ID.",
         "parameters": [
           {
             "name": "id",
             "in": "path",
             "required": true,
             "type": "string",
-            "description": "ID da reclamação"
+            "description": "ID da ocorrência"
           }
         ],
         "responses": {
           "200": {
-            "description": "Dados da reclamação",
+            "description": "Dados da ocorrência",
             "schema": {
               "type": "object",
               "properties": {
-                "reclamacao_id": {
+                "ocorrencia_id": {
                   "type": "number",
                   "example": 10
                 },
-                "reclamacao_titulo": {
+                "ocorrencia_titulo": {
                   "type": "string",
                   "example": "Buraco na rua"
                 },
-                "reclamacao_descricao": {
+                "ocorrencia_descricao": {
                   "type": "string",
                   "example": "Existe um buraco grande na Rua das Flores"
                 },
-                "reclamacao_data": {
+                "ocorrencia_data": {
                   "type": "string",
                   "example": "2025-09-02T15:25:00.000Z"
                 },
-                "reclamacao_status_nome": {
+                "ocorrencia_status_nome": {
                   "type": "string",
                   "example": "Aberta"
                 },
@@ -731,7 +731,46 @@
             }
           },
           "404": {
-            "description": "Reclamação não encontrada"
+            "description": "Ocorrência não encontrada"
+          },
+          "500": {
+            "description": "Erro Interno do Servidor"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Ocorrências"
+        ],
+        "summary": "Deletar uma ocorrência",
+        "description": "Marca uma ocorrência como excluída pelo seu ID.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "ID da ocorrência"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Ocorrência deletada com sucesso"
+          },
+          "401": {
+            "description": "Não autorizado",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "mensagem": {
+                  "type": "string",
+                  "example": "Token de autenticação inválido ou ausente"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
           },
           "500": {
             "description": "Erro Interno do Servidor"
@@ -739,13 +778,13 @@
         }
       }
     },
-    "/reclamacoes/user/{user_id}": {
+    "/ocorrencias/user/{user_id}": {
       "get": {
         "tags": [
-          "Reclamações"
+          "Ocorrências"
         ],
-        "summary": "Buscar reclamações por usuário",
-        "description": "Retorna todas as reclamações feitas por um usuário específico.",
+        "summary": "Buscar ocorrências por usuário",
+        "description": "Retorna todas as ocorrências feitas por um usuário específico.",
         "parameters": [
           {
             "name": "user_id",
@@ -757,25 +796,25 @@
         ],
         "responses": {
           "200": {
-            "description": "Lista de reclamações do usuário",
+            "description": "Lista de ocorrências do usuário",
             "schema": {
               "type": "array",
               "items": {
                 "type": "object",
                 "properties": {
-                  "reclamacao_id": {
+                  "ocorrencia_id": {
                     "type": "number",
                     "example": 10
                   },
-                  "reclamacao_titulo": {
+                  "ocorrencia_titulo": {
                     "type": "string",
                     "example": "Buraco na rua"
                   },
-                  "reclamacao_data": {
+                  "ocorrencia_data": {
                     "type": "string",
                     "example": "2025-09-02T15:25:00.000Z"
                   },
-                  "reclamacao_status": {
+                  "ocorrencia_status": {
                     "type": "number",
                     "example": 1
                   }
