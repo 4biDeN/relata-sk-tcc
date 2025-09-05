@@ -91,6 +91,15 @@ const incrementTokenVersion = async (userId) => {
     await db.query(sql, [userId]);
 };
 
+const deleteUser = async (user_id) => {
+    const sql = `
+        update t_usuario
+            set user_is_atctive = false
+        where user_id = $1
+    `;
+    await db.query(sql, [user_id]);
+}
+
 module.exports = {
     findByDocumneto,
     createUser,
@@ -98,4 +107,5 @@ module.exports = {
     getById,
     updateUser,
     incrementTokenVersion,
+    deleteUser,
 };

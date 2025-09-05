@@ -27,9 +27,14 @@ const updateUser = async (id, data) => {
     return await userRepo.updateUser(id, data);
 };
 
+const deleteUser = async (id) => {
+    return userRepo.deleteUser(id);
+}
+
 module.exports = {
     newUser,
     getAllUsers,
     getUserById,
-    updateUser
+    updateUser,
+    deleteUser
 };

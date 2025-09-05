@@ -542,6 +542,106 @@
         }
       }
     },
+    "./user/{id}": {
+      "delete": {
+        "tags": [
+          "Usuários"
+        ],
+        "summary": "Deleta um usuário pelo ID",
+        "description": "Delelta (marca como excluído) os dados de um usuário específico com base no ID fornecido.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "description": "ID do usuário a ser Deletado",
+            "example": 1
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Dados do usuário",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "number",
+                  "example": 1
+                },
+                "user_username": {
+                  "type": "string",
+                  "example": "usuario1"
+                },
+                "user_email": {
+                  "type": "string",
+                  "example": "usuario1@email.com"
+                },
+                "user_documento": {
+                  "type": "string",
+                  "example": "12345678900"
+                },
+                "user_tipo": {
+                  "type": "number",
+                  "example": 1
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "401": {
+            "description": "Não autorizado"
+          },
+          "403": {
+            "description": "Acesso negado",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "mensagem": {
+                  "type": "string",
+                  "example": "Permissão insuficiente"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "404": {
+            "description": "Usuário não encontrado",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "mensagem": {
+                  "type": "string",
+                  "example": "Usuário não encontrado"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno do servidor",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "mensagem": {
+                  "type": "string",
+                  "example": "Erro ao buscar usuário"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          }
+        }
+      }
+    },
     "/ocorrencias": {
       "post": {
         "tags": [

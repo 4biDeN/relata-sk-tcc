@@ -185,4 +185,51 @@ module.exports = (app) => {
             }
         }
     */);
+
+    app.delete('./user/:id', requireAuth, userController.deleteUser
+    /*
+    #swagger.tags = ["Usuários"]
+    #swagger.summary = "Deleta um usuário pelo ID"
+    #swagger.description = 'Delelta (marca como excluído) os dados de um usuário específico com base no ID fornecido.'
+
+    #swagger.parameters['id'] = {
+        in: 'path',
+        description: 'ID do usuário a ser Deletado',
+        required: true,
+        type: 'integer',
+        example: 1
+    }
+
+    #swagger.responses[204] = {
+        description: 'Dados do usuário',
+        schema: {
+            id: 1,
+            user_username: "usuario1",
+            user_email: "usuario1@email.com",
+            user_documento: "12345678900",
+            user_tipo: 1
+        }
+    }
+
+    #swagger.responses[404] = {
+        description: 'Usuário não encontrado',
+        schema: {
+            mensagem: 'Usuário não encontrado'
+        }
+    }
+
+    #swagger.responses[403] = {
+        description: 'Acesso negado',
+        schema: {
+            mensagem: 'Permissão insuficiente'
+        }
+    }
+
+    #swagger.responses[500] = {
+        description: 'Erro interno do servidor',
+        schema: {
+            mensagem: 'Erro ao buscar usuário'
+        }
+    }
+*/);
 };
