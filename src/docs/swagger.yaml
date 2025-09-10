@@ -677,9 +677,9 @@
                 "local": {
                   "type": "object",
                   "properties": {
-                    "local_cidade": {
-                      "type": "string",
-                      "example": "Saudades"
+                    "local_municipio_id": {
+                      "type": "number",
+                      "example": 4569
                     },
                     "local_estado": {
                       "type": "string",

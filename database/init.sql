@@ -52,7 +52,7 @@ create table if not exists t_municipio (
 create table if not exists t_local (
     local_id serial primary key,
     local_municipio_id integer references t_municipio(municipio_id),
-    local_estado char(2) not null,
+    local_estado char(2) not null ,
     local_bairro varchar(50) not null,
     local_rua varchar(100) not null,
     local_complemento varchar(100),

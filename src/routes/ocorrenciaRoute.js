@@ -13,18 +13,19 @@ module.exports = (app) => {
             description: 'Dados da ocorrência',
             required: true,
             schema: {
-                ocorrencia_user_id: 1,
-                ocorrencia_titulo: "Buraco na rua",
-                ocorrencia_descricao: "Existe um buraco grande na Rua das Flores",
-                ocorrencia_prioridade: 2,
-                local: {
-                    local_cidade: "Saudades",
-                    local_estado: "SC",
-                    local_bairro: "Centro",
-                    local_rua: "Rua das Flores",
-                    local_complemento: "Próximo ao mercado",
-                    local_latitude: -27.1362,
-                    local_longitude: -53.0022
+                "ocorrencia_user_id": 1,
+                "ocorrencia_titulo": "Buraco na rua",
+                "ocorrencia_descricao": "Existe um buraco grande na Rua das Flores",
+                "ocorrencia_prioridade": 2,
+                    "local": {
+                    "local_municipio_id": 4569,
+                    "local_estado": "SC",
+                    "local_bairro": "Centro",
+                    "local_rua": "Rua das Flores",
+                    "local_complemento": "Próximo ao mercado",
+                    "local_latitude": -27.1362,
+                    "local_longitude": -53.0022
+                    }
                 }
             }
         }

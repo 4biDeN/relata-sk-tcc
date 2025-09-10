@@ -21,7 +21,7 @@ const login = async(params) => {
         const password = result.rows[0].user_password
         if (cript.verifyPassword(password, salt, passed_password)){
             let accessProfile = result.rows[0].user_documento
-            let token = jwt.sign({accessProfile}, process.env.JWT_ACCESS_SECRET, { expiresIn: '3d'})
+            let token = jwt.sign({accessProfile}, process.env.JWT_ACCESS_SECRET, { expiresIn: '30m'})
             return {
                 status: "Logado com Sucesso!",
                 user: result.rows[0].user_documento,
