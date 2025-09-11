@@ -186,7 +186,7 @@ module.exports = (app) => {
         }
     */);
 
-    app.delete('./user/:id', requireAuth, userController.deleteUser
+    app.delete('/user/:id', requireAuth, userController.deleteUser
     /*
     #swagger.tags = ["Usuários"]
     #swagger.summary = "Deleta um usuário pelo ID"

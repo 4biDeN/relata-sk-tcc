@@ -540,9 +540,7 @@
             }
           }
         }
-      }
-    },
-    "./user/{id}": {
+      },
       "delete": {
         "tags": [
           "Usuários"

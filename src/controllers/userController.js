@@ -1,8 +1,9 @@
+const { error } = require('console');
 const userService = require('../services/userService');
 
 const createUser = async (req, res) => {
     try {
-        const user = await userService.createUserUser(req.body);
+        const user = await userService.createUser(req.body);
         res.status(201).json(user);
     } catch (err) {
         res.status(500).json({ message: err.message });
@@ -40,11 +41,15 @@ const updateUser = async (req, res) => {
 
 const deleteUser = async (req, res) => {
     try {
-        const user = await userService.getUserById(req.params.id);
+        const userId = req.params.id;
+
+        const user = await userService.getUserById(userId);
         if (!user) return res.status(404).json({ message: "Usuário não encontrado" });
-        res.status(204).json({ message: "Usuário deletado com sucesso" })
-    } catch {
-        res.status(500).json({ message: err.message });
+        
+        await userService.deleteUser(userId);
+        res.status(204).send({ message: "Usuário inativado com sucesso" })
+    } catch (error) {
+        res.status(500).json({ message: error.message });
     }
 };
 

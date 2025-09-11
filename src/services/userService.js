@@ -39,7 +39,7 @@ const createUser = async (params) => {
     return result.rows[0];
 };
 
-const getAll = async () => {
+const getAllUsers = async () => {
     const sql = `
         select u.user_id, u.user_username, u.user_email, u.user_documento, u.user_tipo, u.user_token_version
         from t_usuario u
@@ -48,11 +48,11 @@ const getAll = async () => {
     return result.rows;
 };
 
-const getById = async (user_id) => {
+const getUserById = async (user_id) => {
     const sql = `
         select u.user_id, u.user_username, u.user_email, u.user_documento, u.user_tipo, u.user_token_version
         from t_usuario u
-        where u.user_id = $1 and u.user_is_atctive = true
+        where u.user_id = $1 and u.user_is_active = true
     `;
     const result = await db.query(sql, [user_id]);
     return result.rows.length ? result.rows[0] : null;
@@ -63,18 +63,23 @@ const updateUser = async (user_id, fields) => {
     const values = [];
     let index = 1;
 
+    if (fields.user_password) {
+        const { salt, hashedPassword } = crypt.createPassword(fields.user_password);
+        setClauses.push(`user_password = $${index++}`);
+        values.push(hashedPassword);
+        setClauses.push(`user_salt = $${index++}`);
+        values.push(salt);
+    };
+
     for (const [key, value] of Object.entries(fields)) {
-        if (value !== undefined) {
-            setClauses.push(`${key} = $${index}`);
+        if (value !== undefined && key !== 'user_password') {
+            setClauses.push(`${key} = $${index++}`);
             values.push(value);
-            index++;
         }
     }
 
     if (setClauses.length === 0) return false;
-
-    console.log(setClauses)
-    console.log(values)
+    
     values.push(user_id);
     const sql = `
         update t_usuario
@@ -86,30 +91,20 @@ const updateUser = async (user_id, fields) => {
     return result.rowCount > 0;
 };
 
-// const incrementTokenVersion = async (userId) => {
-//     const sql = `
-//         update t_usuario
-//         set user_token_version = user_token_version + 1
-//         where user_id = $1
-//     `;
-//     await db.query(sql, [userId]);
-// };
-
 const deleteUser = async (user_id) => {
     const sql = `
         update t_usuario
-            set user_is_atctive = false
+            set user_is_active = false
         where user_id = $1
     `;
     await db.query(sql, [user_id]);
-}
+};
 
 module.exports = {
     // findByDocumneto,
     createUser,
-    getAll,
-    getById,
+    getAllUsers,
+    getUserById,
     updateUser,
-    // incrementTokenVersion,
     deleteUser,
 };
