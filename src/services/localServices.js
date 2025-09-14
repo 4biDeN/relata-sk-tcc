@@ -52,29 +52,81 @@ const updateLocal = async ( local_id, local ) => {
         }
     }
     if (setClauses.length === 0) return false;
-    console.log(setClauses)
-    console.log(values)
+
     values.push(local_id);
     const sql = `
         update t_local
         set ${setClauses.join(', ')}
         where local_id = $${index}
     `;
-    console.log(sql)
-
     const result = await db.query(sql, values);
-
     return result.rowCount > 0;
 };
 
-/*
-TODO: Criar função para deletar o local
-TODO: Criar função para listar os locais
-TODO: Criar função para buscar local por id
-TODO: Criar função para buscar local por cidade, bairro ou rua
-*/
+const getLocais = async () => {
+    const sql = `
+        select
+            l.local_id,
+            l.local_estado,
+            m.municipio_nome,
+            l.local_bairro,
+            l.local_rua,
+            l.local_complemento,
+            l.local_latitude,
+            l.local_longitude
+        from t_local l
+        join t_municipio m on l.local_municipio_id = m.municipio_id
+    `;
+    const result = await db.query(sql);
+    return result.rows;
+};
+
+const getLocalById = async ( local_id ) => {
+    const sql = `
+        select
+            l.local_id,
+            l.local_estado,
+            m.municipio_nome,
+            l.local_bairro,
+            l.local_rua,
+            l.local_complemento,
+            l.local_latitude,
+            l.local_longitude
+        from t_local l
+        join t_municipio m on l.local_municipio_id = m.municipio_id
+        where l.local_id = $1
+    `;
+    const result = await db.query(sql, [local_id]);
+    return result.rows[0];
+};
+
+const searchLocais = async ( query ) => {
+    const sql = `
+        select
+            l.local_id,
+            l.local_estado,
+            m.municipio_nome,
+            l.local_bairro,
+            l.local_rua,
+            l.local_complemento,
+            l.local_latitude,
+            l.local_longitude
+        from t_local l
+        join t_municipio m on l.local_municipio_id = m.municipio_id
+        where m.municipio_nome ilike '%' || $1 || '%'
+        or l.local_bairro ilike '%' || $1 || '%'
+        or l.local_rua ilike '%' || $1 || '%'
+    `;
+    const result = await db.query(sql, [query]);
+    return result.rows;
+};
+
+// TODO: Criar função para deletar o local (soft delete)
 module.exports = {
     getLocal,
     createLocal,
-    updateLocal
+    updateLocal,
+    getLocais,
+    getLocalById,
+    searchLocais
 }

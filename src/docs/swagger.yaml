@@ -459,10 +459,6 @@
                   "type": "string",
                   "example": "usuario@email.com"
                 },
-                "user_documento": {
-                  "type": "string",
-                  "example": "12345678900"
-                },
                 "user_tipo": {
                   "type": "number",
                   "example": 1
@@ -931,6 +927,530 @@
           },
           "500": {
             "description": "Erro Interno do Servidor"
+          }
+        }
+      }
+    },
+    "/local": {
+      "post": {
+        "tags": [
+          "Locais"
+        ],
+        "summary": "Cria um novo local",
+        "description": "Cria um novo local com os dados fornecidos.",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "description": "Dados do novo local",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "local_municipio_id": {
+                  "type": "number",
+                  "example": 4569
+                },
+                "local_estado": {
+                  "type": "string",
+                  "example": "SC"
+                },
+                "local_municipio": {
+                  "type": "string",
+                  "example": "Saudades"
+                },
+                "local_bairro": {
+                  "type": "string",
+                  "example": "Centro"
+                },
+                "local_rua": {
+                  "type": "string",
+                  "example": "Rua das Flores"
+                },
+                "local_complemento": {
+                  "type": "string",
+                  "example": "Próximo à praça"
+                },
+                "local_latitude": {
+                  "type": "number",
+                  "example": -26.9311
+                },
+                "local_longitude": {
+                  "type": "number",
+                  "example": -53.0025
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Local criado com sucesso",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Local criado com sucesso."
+                },
+                "local_id": {
+                  "type": "number",
+                  "example": 10
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string",
+                  "example": "Campo local_municipio_id é obrigatório."
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "401": {
+            "description": "Não autorizado"
+          },
+          "500": {
+            "description": "Erro interno do servidor",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string",
+                  "example": "Erro ao criar local."
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/local/{local_id}": {
+      "get": {
+        "tags": [
+          "Locais"
+        ],
+        "summary": "Obtém um local pelo ID",
+        "description": "Retorna os dados de um local específico com base no ID fornecido.",
+        "parameters": [
+          {
+            "name": "local_id",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "description": "ID do local a ser buscado",
+            "example": 10
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Dados do local",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "local_id": {
+                  "type": "number",
+                  "example": 10
+                },
+                "local_estado": {
+                  "type": "string",
+                  "example": "SC"
+                },
+                "local_municipio": {
+                  "type": "string",
+                  "example": "Saudades"
+                },
+                "local_bairro": {
+                  "type": "string",
+                  "example": "Centro"
+                },
+                "local_rua": {
+                  "type": "string",
+                  "example": "Rua das Flores"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "400": {
+            "description": "ID do local não informado",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string",
+                  "example": "ID do local é obrigatório."
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "401": {
+            "description": "Não autorizado"
+          },
+          "404": {
+            "description": "Local não encontrado",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string",
+                  "example": "Local não encontado."
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno do servidor",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string",
+                  "example": "Erro ao buscar local por ID."
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Locais"
+        ],
+        "summary": "Atualiza um local existente",
+        "description": "Atualiza um local existente com base no ID fornecido.",
+        "parameters": [
+          {
+            "name": "local_id",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "description": "ID do local a ser atualizado",
+            "example": 10
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "description": "Dados do local a serem atualizados",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "local_estado": {
+                  "type": "string",
+                  "example": "SC"
+                },
+                "local_municipio_id": {
+                  "type": "number",
+                  "example": 4569
+                },
+                "local_bairro": {
+                  "type": "string",
+                  "example": "Centro"
+                },
+                "local_rua": {
+                  "type": "string",
+                  "example": "Rua Nova"
+                },
+                "local_complemento": {
+                  "type": "string",
+                  "example": "Ao lado do mercado"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Local atualizado com sucesso",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Local atualizado com sucesso."
+                },
+                "local": {
+                  "type": "object",
+                  "properties": {
+                    "local_id": {
+                      "type": "number",
+                      "example": 10
+                    },
+                    "local_estado": {
+                      "type": "string",
+                      "example": "SC"
+                    },
+                    "local_municipio": {
+                      "type": "string",
+                      "example": "Saudades"
+                    },
+                    "local_bairro": {
+                      "type": "string",
+                      "example": "Centro"
+                    },
+                    "local_rua": {
+                      "type": "string",
+                      "example": "Rua Nova"
+                    }
+                  }
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "400": {
+            "description": "ID do local não informado",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string",
+                  "example": "ID do local é obrigatório."
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "401": {
+            "description": "Não autorizado"
+          },
+          "404": {
+            "description": "Local não encontrado",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string",
+                  "example": "Local não encontrado."
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno do servidor",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string",
+                  "example": "Erro ao atualizar local."
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/locais/search": {
+      "get": {
+        "tags": [
+          "Locais"
+        ],
+        "summary": "Busca locais por termo",
+        "description": "Busca locais por cidade, bairro ou rua.",
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "description": "Termo de busca (cidade, bairro ou rua)",
+            "required": true,
+            "type": "string",
+            "example": "Centro"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Locais encontrados",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "local_id": {
+                    "type": "number",
+                    "example": 10
+                  },
+                  "local_estado": {
+                    "type": "string",
+                    "example": "SC"
+                  },
+                  "local_municipio": {
+                    "type": "string",
+                    "example": "Saudades"
+                  },
+                  "local_bairro": {
+                    "type": "string",
+                    "example": "Centro"
+                  },
+                  "local_rua": {
+                    "type": "string",
+                    "example": "Rua das Flores"
+                  }
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "400": {
+            "description": "Parâmetro de busca não informado",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string",
+                  "example": "Parâmetros para a busca não informados."
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "401": {
+            "description": "Não autorizado"
+          },
+          "404": {
+            "description": "Nenhum local encontrado",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string",
+                  "example": "Nenhum local encontrado."
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno do servidor",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string",
+                  "example": "Erro ao buscar locais."
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/locais": {
+      "get": {
+        "tags": [
+          "Locais"
+        ],
+        "summary": "Lista todos os locais",
+        "description": "Retorna uma lista de todos os locais cadastrados.",
+        "responses": {
+          "200": {
+            "description": "Lista de locais",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "local_id": {
+                    "type": "number",
+                    "example": 10
+                  },
+                  "local_estado": {
+                    "type": "string",
+                    "example": "SC"
+                  },
+                  "local_municipio": {
+                    "type": "string",
+                    "example": "Saudades"
+                  },
+                  "local_bairro": {
+                    "type": "string",
+                    "example": "Centro"
+                  },
+                  "local_rua": {
+                    "type": "string",
+                    "example": "Rua das Flores"
+                  }
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "401": {
+            "description": "Não autorizado",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string",
+                  "example": "Token inválido ou ausente"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno do servidor",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string",
+                  "example": "Erro ao buscar locais."
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
           }
         }
       }

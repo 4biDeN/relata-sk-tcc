@@ -151,7 +151,6 @@ module.exports = (app) => {
             schema: {
                 user_username: "novousuario",
                 user_email: "usuario@email.com",
-                user_documento: "12345678900",
                 user_tipo: 1,
                 user_password: "senha123"
             }
