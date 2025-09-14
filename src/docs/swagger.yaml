@@ -656,6 +656,10 @@
                   "type": "number",
                   "example": 1
                 },
+                "ocorrencia_anonima": {
+                  "type": "boolean",
+                  "example": false
+                },
                 "ocorrencia_titulo": {
                   "type": "string",
                   "example": "Buraco na rua"
@@ -829,6 +833,142 @@
           },
           "500": {
             "description": "Erro Interno do Servidor"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Ocorrências"
+        ],
+        "summary": "Atualiza campos permitidos de uma ocorrência",
+        "description": "\r  Atualiza apenas os campos permitidos de uma ocorrência existente pelo seu ID.<br>\r  <b>Campos permitidos para atualização:</b>\r  <ul>\r  <li>ocorrencia_titulo</li>\r  <li>ocorrencia_descricao</li>\r  <li>ocorrencia_prioridade</li>\r  <li>ocorrencia_status</li>\r  </ul>\r  <b>Observações:</b>\r  <ul>\r  <li>Se nenhum campo permitido for enviado, retorna erro 400.</li>\r  <li>Se a ocorrência não existir, retorna erro 404.</li>\r  <li>É necessário estar autenticado para atualizar uma ocorrência.</li>\r  </ul>\r  ",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "ID da ocorrência a ser atualizada"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "description": "Informe ao menos um dos campos permitidos para atualização",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "ocorrencia_titulo": {
+                  "type": "string",
+                  "example": "Título atualizado"
+                },
+                "ocorrencia_descricao": {
+                  "type": "string",
+                  "example": "Descrição detalhada da ocorrência"
+                },
+                "ocorrencia_prioridade": {
+                  "type": "number",
+                  "example": 2
+                },
+                "ocorrencia_status": {
+                  "type": "number",
+                  "example": 1
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ocorrência atualizada com sucesso",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "ocorrencia_id": {
+                  "type": "number",
+                  "example": 10
+                },
+                "ocorrencia_titulo": {
+                  "type": "string",
+                  "example": "Título atualizado"
+                },
+                "ocorrencia_descricao": {
+                  "type": "string",
+                  "example": "Descrição detalhada da ocorrência"
+                },
+                "ocorrencia_prioridade": {
+                  "type": "number",
+                  "example": 2
+                },
+                "ocorrencia_status": {
+                  "type": "number",
+                  "example": 1
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "400": {
+            "description": "Nenhum campo permitido para atualização informado",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Nenhum campo permitido para atualização informado."
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "401": {
+            "description": "Não autorizado. Token de autenticação inválido ou ausente.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Não Autenticado"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "404": {
+            "description": "Ocorrência não encontrada ou nenhum campo atualizado",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Ocorrência não encontrada ou nenhum campo atualizado."
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno do servidor",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Descrição do erro."
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
           }
         }
       },
@@ -1029,6 +1169,81 @@
                 "error": {
                   "type": "string",
                   "example": "Erro ao criar local."
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/locais": {
+      "get": {
+        "tags": [
+          "Locais"
+        ],
+        "summary": "Lista todos os locais",
+        "description": "Retorna uma lista de todos os locais cadastrados.",
+        "responses": {
+          "200": {
+            "description": "Lista de locais",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "local_id": {
+                    "type": "number",
+                    "example": 10
+                  },
+                  "local_estado": {
+                    "type": "string",
+                    "example": "SC"
+                  },
+                  "local_municipio": {
+                    "type": "string",
+                    "example": "Saudades"
+                  },
+                  "local_bairro": {
+                    "type": "string",
+                    "example": "Centro"
+                  },
+                  "local_rua": {
+                    "type": "string",
+                    "example": "Rua das Flores"
+                  }
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "401": {
+            "description": "Não autorizado",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string",
+                  "example": "Token inválido ou ausente"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno do servidor",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string",
+                  "example": "Erro ao buscar locais."
                 }
               },
               "xml": {
@@ -1355,81 +1570,6 @@
                 "error": {
                   "type": "string",
                   "example": "Nenhum local encontrado."
-                }
-              },
-              "xml": {
-                "name": "main"
-              }
-            }
-          },
-          "500": {
-            "description": "Erro interno do servidor",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "error": {
-                  "type": "string",
-                  "example": "Erro ao buscar locais."
-                }
-              },
-              "xml": {
-                "name": "main"
-              }
-            }
-          }
-        }
-      }
-    },
-    "/locais": {
-      "get": {
-        "tags": [
-          "Locais"
-        ],
-        "summary": "Lista todos os locais",
-        "description": "Retorna uma lista de todos os locais cadastrados.",
-        "responses": {
-          "200": {
-            "description": "Lista de locais",
-            "schema": {
-              "type": "array",
-              "items": {
-                "type": "object",
-                "properties": {
-                  "local_id": {
-                    "type": "number",
-                    "example": 10
-                  },
-                  "local_estado": {
-                    "type": "string",
-                    "example": "SC"
-                  },
-                  "local_municipio": {
-                    "type": "string",
-                    "example": "Saudades"
-                  },
-                  "local_bairro": {
-                    "type": "string",
-                    "example": "Centro"
-                  },
-                  "local_rua": {
-                    "type": "string",
-                    "example": "Rua das Flores"
-                  }
-                }
-              },
-              "xml": {
-                "name": "main"
-              }
-            }
-          },
-          "401": {
-            "description": "Não autorizado",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "error": {
-                  "type": "string",
-                  "example": "Token inválido ou ausente"
                 }
               },
               "xml": {

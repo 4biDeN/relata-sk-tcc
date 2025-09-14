@@ -14,18 +14,20 @@ const createOcorrencia = async (data) => {
         const sql = `
             insert into t_ocorrencia (
             ocorrencia_user_id,
+            ocorrencia_anonima,
             ocorrencia_titulo,
             ocorrencia_descricao,
             ocorrencia_status,
             ocorrencia_prioridade,
             ocorrencia_local_id
         )
-        values ($1, $2, $3, 1, $4, $5)
+        values ($1, $2, $3, $4, 1, $5, $6)
         returning ocorrencia_id, ocorrencia_protocolo, ocorrencia_titulo, ocorrencia_descricao
         `;
     
         const params = [
             data.ocorrencia_user_id,
+            data.ocorrencia_anonima,
             data.ocorrencia_titulo,
             data.ocorrencia_descricao,
             data.ocorrencia_prioridade,
@@ -53,6 +55,8 @@ const getOcorrenciaById = async (ocorrencia_id) => {
             o.ocorrencia_titulo,
             o.ocorrencia_descricao,
             o.ocorrencia_data,
+            o.ocorrencia_protocolo,
+            o.ocorrencia_anonima,
             os.ocorrencia_status_nome,
             u.user_username,
             m.municipio_nome,
@@ -78,8 +82,11 @@ const getOcorrenciaByUser = async (userd_id) => {
             o.ocorrencia_id,
             o.ocorrencia_titulo,
             o.ocorrencia_data,
-            o.ocorrencia_status
+            o.ocorrencia_protocolo,
+            o.ocorrencia_anonima,
+            os.ocorrencia_status_nome
         from t_ocorrencia o
+        join t_ocorrencia_status os on o.ocorrencia_status = os.ocorrencia_status_id
         where o.ocorrencia_user_id = $1 and o.ocorrencia_excluida != true
     `;
     const result = await db.query(sql, [userd_id]);
@@ -96,19 +103,52 @@ const deleteOcorrencia = async (ocorrencia_id) => {
     await db.query(sql, [ocorrencia_id]);
 }
 
-/*
-TODO: Criar função para atualizar a ocorrência
-TODO: Criar função para listar as ocorrencias por prioridade
-TODO: Criar função para listar as ocorrencias por status
-TODO: Criar função para listar as ocorrencias por data (ordenar)
-TODO: Criar função para listar as ocorrencias por local (cidade, bairro, rua)
-    Com isso será uma função, ocorrencias proximas do usuário;
-TODO: Criar função para pesquisar as ocorrencias por título ou descrição (tsvector)
-*/
+// TODO: Criar função para atualizar a ocorrência
+const updateOcorrencia = async (ocorrencia_id, data) => {
+    const allowedFields = [
+        'ocorrencia_titulo',
+        'ocorrencia_descricao',
+        'ocorrencia_status',
+        'ocorrencia_prioridade',
+        'ocorrencia_anonima'
+    ]
+
+    const setClause = [];
+    const values = [];
+    let index = 1;
+
+    for (const field of allowedFields) {
+        if (data[field] !== undefined) {
+            setClause.push(`${field} = $${index}`);
+            values.push(data[field]);
+            index++;
+        }
+    }
+
+    if (setClause.length === 0) return false;
+
+    values.push(ocorrencia_id);
+    const sql = `
+        update t_ocorrencia
+        set ${setClause.join(', ')}
+        where ocorrencia_id = $${index}
+        returning ocorrencia_id
+    `;
+    const result = await db.query(sql, values);
+    return result.rows.length ? result.rows[0] : false;
+};
+
+// TODO: Criar função para listar as ocorrencias por prioridade
+// TODO: Criar função para listar as ocorrencias por status
+// TODO: Criar função para listar as ocorrencias por data (ordenar)
+// TODO: Criar função para listar as ocorrencias por local (cidade, bairro, rua)
+//     Com isso será uma função, ocorrencias proximas do usuário;
+// TODO: Criar função para pesquisar as ocorrencias por título ou descrição (tsvector)
 
 module.exports = {
     createOcorrencia,
     getOcorrenciaById,
     getOcorrenciaByUser,
-    deleteOcorrencia
+    deleteOcorrencia,
+    updateOcorrencia,
 };

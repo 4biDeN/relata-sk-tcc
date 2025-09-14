@@ -63,6 +63,7 @@ create table if not exists t_local (
 create table if not exists t_ocorrencia (
     ocorrencia_id serial primary key,
     ocorrencia_user_id integer not null references t_usuario(user_id),
+    ocorrencia_anonima boolean not null default false,
     ocorrencia_protocolo text unique,
     ocorrencia_titulo text not null,
     ocorrencia_descricao text not null,
