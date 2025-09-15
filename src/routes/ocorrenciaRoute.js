@@ -50,6 +50,117 @@ module.exports = (app) => {
             schema: { mensagem: 'Token de autenticação inválido ou ausente' }
         }
     */);
+    
+    app.get('/ocorrencias/search', requireAuth, ocorrenciaController.searchOcorrenciaByFieldValue
+    /*
+        #swagger.tags = ['Ocorrências']
+        #swagger.summary = 'Busca dinâmica de ocorrências'
+        #swagger.description = `
+            Permite buscar ocorrências de forma dinâmica, filtrando por status, prioridade, título ou descrição.<br>
+            <b>Parâmetros de consulta (query):</b>
+            <ul>
+                <li><b>field</b> (opcional): Campo para filtrar. Valores possíveis: <code>status</code>, <code>prioridade</code>, <code>titulo</code>, <code>descricao</code>. Padrão: <code>titulo</code>.</li>
+                <li><b>value</b> (opcional): Valor a ser pesquisado. Para <code>status</code> e <code>prioridade</code>, informe o <b>ID</b> correspondente. Para <code>titulo</code> e <code>descricao</code>, informe um texto.</li>
+                <li><b>orderField</b> (opcional): Campo para ordenação. Valores possíveis: <code>data</code>, <code>status</code>, <code>prioridade</code>, <code>titulo</code>. Padrão: <code>data</code>.</li>
+                <li><b>orderDir</b> (opcional): Direção da ordenação. Valores possíveis: <code>asc</code> ou <code>desc</code>. Padrão: <code>desc</code>.</li>
+                <li><b>limit</b> (opcional): Número máximo de resultados por página. Padrão: <code>10</code>.</li>
+                <li><b>offset</b> (opcional): Quantidade de registros a pular (para paginação). Padrão: <code>0</code>.</li>
+            </ul>
+            <b>Exemplos de uso:</b>
+            <ul>
+                <li><code>/ocorrencias/search?field=status&value=1</code> (busca por status ID 1)</li>
+                <li><code>/ocorrencias/search?field=prioridade&value=2</code> (busca por prioridade ID 2)</li>
+                <li><code>/ocorrencias/search?field=titulo&value=buraco</code> (busca por título contendo "buraco")</li>
+                <li><code>/ocorrencias/search?orderField=prioridade&orderDir=asc&limit=5</code> (ordena por prioridade, ascendente, 5 por página)</li>
+            </ul>
+            <b>Status HTTP:</b>
+            <ul>
+                <li><b>200</b>: Sucesso, retorna lista de ocorrências.</li>
+                <li><b>400</b>: Parâmetro inválido.</li>
+                <li><b>404</b>: Nenhuma ocorrência encontrada.</li>
+                <li><b>401</b>: Não autorizado.</li>
+                <li><b>500</b>: Erro interno do servidor.</li>
+            </ul>
+        `
+    
+        #swagger.parameters['field'] = {
+            in: 'query',
+            description: 'Campo para filtrar (status, prioridade, titulo, descricao)',
+            required: false,
+            type: 'string',
+            example: 'status'
+        }
+        #swagger.parameters['value'] = {
+            in: 'query',
+            description: 'Valor do filtro (ID para status/prioridade, texto para titulo/descricao)',
+            required: false,
+            type: 'string',
+            example: '1'
+        }
+        #swagger.parameters['orderField'] = {
+            in: 'query',
+            description: 'Campo para ordenação (data, status, prioridade, titulo)',
+            required: false,
+            type: 'string',
+            example: 'data'
+        }
+        #swagger.parameters['orderDir'] = {
+            in: 'query',
+            description: 'Direção da ordenação (asc ou desc)',
+            required: false,
+            type: 'string',
+            example: 'desc'
+        }
+        #swagger.parameters['limit'] = {
+            in: 'query',
+            description: 'Limite de resultados por página',
+            required: false,
+            type: 'integer',
+            example: 10
+        }
+        #swagger.parameters['offset'] = {
+            in: 'query',
+            description: 'Quantidade de registros a pular',
+            required: false,
+            type: 'integer',
+            example: 0
+        }
+    
+        #swagger.responses[200] = {
+            description: 'Lista de ocorrências encontradas',
+            schema: [
+                {
+                    ocorrencia_id: 10,
+                    ocorrencia_protocolo: "2025-000010",
+                    ocorrencia_titulo: "Buraco na rua",
+                    ocorrencia_descricao: "Existe um buraco grande na Rua das Flores",
+                    status: "Aberta",
+                    prioridade: "Alta",
+                    ocorrencia_data: "2025-09-02T15:25:00.000Z"
+                }
+            ]
+        }
+    
+        #swagger.responses[400] = {
+            description: 'Parâmetro inválido',
+            schema: { message: 'Campo de filtro inválido' }
+        }
+    
+        #swagger.responses[404] = {
+            description: 'Nenhuma ocorrência encontrada',
+            schema: { message: 'Nenhuma ocorrência encontrada.' }
+        }
+    
+        #swagger.responses[401] = {
+            description: 'Não autorizado',
+            schema: { message: 'Token de autenticação inválido ou ausente' }
+        }
+    
+        #swagger.responses[500] = {
+            description: 'Erro interno do servidor',
+            schema: { message: 'Erro ao Buscar ocorrencias', detail: 'Descrição do erro.' }
+        }
+    */);
 
     app.get('/ocorrencias/:id', requireAuth, ocorrenciaController.getOcorrenciaById
     /*

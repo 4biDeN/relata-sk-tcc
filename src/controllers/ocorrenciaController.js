@@ -72,10 +72,59 @@ const updateOcorrencia = async (req, res) => {
     }
 };
 
+const searchOcorrenciaByFieldValue = async (req, res) => {
+    try {
+        const {
+            field = 'titulo',
+            value = '',
+            orderField = 'data',
+            orderDir = 'desc',
+            limit = 10,
+            offset = 0
+        } = req.query;
+        console.log(req.query)
+        const allowedFields = ['status', 'prioridade', 'titulo', 'descricao'];
+        const allowedOrderFields = ['data', 'status', 'prioridade', 'titulo'];
+        const allowedOrderDir = ['asc', 'desc'];
+
+        if (!allowedFields.includes(field)) {
+            return res.status(400).json({ message: 'Campo de filtro inválido' });
+        }
+        if (!allowedOrderFields.includes(orderField)) {
+            return res.status(400).json({ message: 'Campo de ordenação inválido' });
+        }
+        if (!allowedOrderDir.includes(orderDir.toLowerCase())) {
+            return res.status(400).json({ message: 'Direção de ordenação inválida' });
+        }
+        if (isNaN(limit) || isNaN(offset) || limit < 1 || offset < 0) {
+            return res.status(400).json({ message: 'Parâmetro de paginação inválidos.' });
+        }
+
+        const ocorrencias = await ocorrenciaService.searchOcorrenciaByFieldValue(
+            field,
+            value,
+            orderField,
+            orderDir,
+            parseInt(limit),
+            parseInt(offset)
+        );
+
+        if (!ocorrencias || ocorrencias.length === 0) {
+            return res.status(404).json({ message: 'Nenhuma ocorrência encontrada.' });
+        }
+
+        res.status(200).json(ocorrencias);
+    } catch (err) {
+        res.status(500).json({ message: 'Erro ao Buscar ocorrencias', detail: err.message });
+
+    }
+};
+
 module.exports = {
     createOcorrencia,
     getOcorrenciaById,
     getOcorrenciaByUser,
     deleteOcorrencia,
-    updateOcorrencia
+    updateOcorrencia,
+    searchOcorrenciaByFieldValue
 };

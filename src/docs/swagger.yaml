@@ -761,6 +761,173 @@
         }
       }
     },
+    "/ocorrencias/search": {
+      "get": {
+        "tags": [
+          "Ocorrências"
+        ],
+        "summary": "Busca dinâmica de ocorrências",
+        "description": "\r  Permite buscar ocorrências de forma dinâmica, filtrando por status, prioridade, título ou descrição.<br>\r  <b>Parâmetros de consulta (query):</b>\r  <ul>\r  <li><b>field</b> (opcional): Campo para filtrar. Valores possíveis: <code>status</code>, <code>prioridade</code>, <code>titulo</code>, <code>descricao</code>. Padrão: <code>titulo</code>.</li>\r  <li><b>value</b> (opcional): Valor a ser pesquisado. Para <code>status</code> e <code>prioridade</code>, informe o <b>ID</b> correspondente. Para <code>titulo</code> e <code>descricao</code>, informe um texto.</li>\r  <li><b>orderField</b> (opcional): Campo para ordenação. Valores possíveis: <code>data</code>, <code>status</code>, <code>prioridade</code>, <code>titulo</code>. Padrão: <code>data</code>.</li>\r  <li><b>orderDir</b> (opcional): Direção da ordenação. Valores possíveis: <code>asc</code> ou <code>desc</code>. Padrão: <code>desc</code>.</li>\r  <li><b>limit</b> (opcional): Número máximo de resultados por página. Padrão: <code>10</code>.</li>\r  <li><b>offset</b> (opcional): Quantidade de registros a pular (para paginação). Padrão: <code>0</code>.</li>\r  </ul>\r  <b>Exemplos de uso:</b>\r  <ul>\r  <li><code>/ocorrencias/search?field=status&value=1</code> (busca por status ID 1)</li>\r  <li><code>/ocorrencias/search?field=prioridade&value=2</code> (busca por prioridade ID 2)</li>\r  <li><code>/ocorrencias/search?field=titulo&value=buraco</code> (busca por título contendo \"buraco\")</li>\r  <li><code>/ocorrencias/search?orderField=prioridade&orderDir=asc&limit=5</code> (ordena por prioridade, ascendente, 5 por página)</li>\r  </ul>\r  <b>Status HTTP:</b>\r  <ul>\r  <li><b>200</b>: Sucesso, retorna lista de ocorrências.</li>\r  <li><b>400</b>: Parâmetro inválido.</li>\r  <li><b>404</b>: Nenhuma ocorrência encontrada.</li>\r  <li><b>401</b>: Não autorizado.</li>\r  <li><b>500</b>: Erro interno do servidor.</li>\r  </ul>\r  ",
+        "parameters": [
+          {
+            "name": "field",
+            "in": "query",
+            "description": "Campo para filtrar (status, prioridade, titulo, descricao)",
+            "required": false,
+            "type": "string",
+            "example": "status"
+          },
+          {
+            "name": "value",
+            "in": "query",
+            "description": "Valor do filtro (ID para status/prioridade, texto para titulo/descricao)",
+            "required": false,
+            "type": "string",
+            "example": "1"
+          },
+          {
+            "name": "orderField",
+            "in": "query",
+            "description": "Campo para ordenação (data, status, prioridade, titulo)",
+            "required": false,
+            "type": "string",
+            "example": "data"
+          },
+          {
+            "name": "orderDir",
+            "in": "query",
+            "description": "Direção da ordenação (asc ou desc)",
+            "required": false,
+            "type": "string",
+            "example": "desc"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Limite de resultados por página",
+            "required": false,
+            "type": "integer",
+            "example": 10
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "Quantidade de registros a pular",
+            "required": false,
+            "type": "integer",
+            "example": 0
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de ocorrências encontradas",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "ocorrencia_id": {
+                    "type": "number",
+                    "example": 10
+                  },
+                  "ocorrencia_protocolo": {
+                    "type": "string",
+                    "example": "2025-000010"
+                  },
+                  "ocorrencia_titulo": {
+                    "type": "string",
+                    "example": "Buraco na rua"
+                  },
+                  "ocorrencia_descricao": {
+                    "type": "string",
+                    "example": "Existe um buraco grande na Rua das Flores"
+                  },
+                  "status": {
+                    "type": "string",
+                    "example": "Aberta"
+                  },
+                  "prioridade": {
+                    "type": "string",
+                    "example": "Alta"
+                  },
+                  "ocorrencia_data": {
+                    "type": "string",
+                    "example": "2025-09-02T15:25:00.000Z"
+                  }
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "400": {
+            "description": "Parâmetro inválido",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Campo de filtro inválido"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "401": {
+            "description": "Não autorizado",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Token de autenticação inválido ou ausente"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "404": {
+            "description": "Nenhuma ocorrência encontrada",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Nenhuma ocorrência encontrada."
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno do servidor",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Erro ao Buscar ocorrencias"
+                },
+                "detail": {
+                  "type": "string",
+                  "example": "Descrição do erro."
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          }
+        }
+      }
+    },
     "/ocorrencias/{id}": {
       "get": {
         "tags": [

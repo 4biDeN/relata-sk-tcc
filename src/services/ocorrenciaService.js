@@ -140,10 +140,70 @@ const updateOcorrencia = async (ocorrencia_id, data) => {
 
 // TODO: Criar função para listar as ocorrencias por prioridade
 // TODO: Criar função para listar as ocorrencias por status
+const searchOcorrenciaByFieldValue = async ( field, value, orderField, orderDir, limit = 10, offset = 0) => {
+    const allowedFilterFields = [ 'status', 'prioridade', 'titulo', 'descricao' ];
+    const allowedOrderFilterFields = [ 'data', 'status', 'prioridade', 'titulo' ];
+    const allowedOrderDir = [ 'asc', 'desc' ];
+
+    if (!allowedFilterFields.includes(field)) field = 'titulo';
+    if (!allowedOrderFilterFields.includes(orderField)) orderField = 'data';
+    if (!allowedOrderDir.includes(orderDir.toLowerCase())) orderDir = 'desc';
+
+    const sql = `
+        select
+            o.ocorrencia_id,
+            o.ocorrencia_protocolo,
+            o.ocorrencia_titulo,
+            o.ocorrencia_descricao,
+            s.ocorrencia_status_nome as status,
+            p.ocorrencia_prioridade_nome as prioridade,
+            o.ocorrencia_data,
+            o.ocorrencia_anonima
+        from
+            t_ocorrencia o
+        left join
+            t_ocorrencia_status s on o.ocorrencia_status = s.ocorrencia_status_id
+        left join
+            t_ocorrencia_prioridade p on o.ocorrencia_prioridade = p.ocorrencia_prioridade_id
+        where
+            ($2 = '' or
+                case
+                when $1 = 'status'     then o.ocorrencia_status = cast($2 as integer)
+                when $1 = 'prioridade' then o.ocorrencia_prioridade = cast($2 as integer)
+                when $1 = 'titulo'     then o.ocorrencia_titulo ilike '%' || $2 || '%'
+                when $1 = 'descricao'  then o.ocorrencia_descricao ilike '%' || $2 || '%'
+                else false
+            end
+        )
+            and o.ocorrencia_excluida = false
+        order by
+            case when $4 = 'asc' and $3 in ('status', 'prioridade', 'titulo') then case $3 when 'status' then s.ocorrencia_status_nome when 'prioridade' then p.ocorrencia_prioridade_nome when 'titulo' then o.ocorrencia_titulo end end asc,
+            case when $4 = 'desc' and $3 in ('status', 'prioridade', 'titulo') then case $3 when 'status' then s.ocorrencia_status_nome when 'prioridade' then p.ocorrencia_prioridade_nome when 'titulo' then o.ocorrencia_titulo end end desc,
+            case when $4 = 'asc' and $3 = 'data' then o.ocorrencia_data end asc,
+            case when $4 = 'desc' and $3 = 'data' then o.ocorrencia_data end desc,
+            o.ocorrencia_id desc
+        limit $5 
+        offset $6;
+    `;
+
+    const params = [
+        field,
+        value || '',
+        orderField,
+        orderDir.toLowerCase(),
+        limit,
+        offset
+    ];
+
+    console.log(params)
+    const result = await db.query(sql, params);
+    return result.rows.length ? result.rows : false;
+};
+
+// TODO: Criar função para pesquisar as ocorrencias por título ou descrição (tsvector)
 // TODO: Criar função para listar as ocorrencias por data (ordenar)
 // TODO: Criar função para listar as ocorrencias por local (cidade, bairro, rua)
 //     Com isso será uma função, ocorrencias proximas do usuário;
-// TODO: Criar função para pesquisar as ocorrencias por título ou descrição (tsvector)
 
 module.exports = {
     createOcorrencia,
@@ -151,4 +211,5 @@ module.exports = {
     getOcorrenciaByUser,
     deleteOcorrencia,
     updateOcorrencia,
+    searchOcorrenciaByFieldValue
 };
