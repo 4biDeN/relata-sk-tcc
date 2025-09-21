@@ -1,8 +1,11 @@
-const locaisController = require('../controllers/localController');
-const requireAuth = require('../auth/requireAuth');
+const locaisController = require("../controllers/localController");
+const requireAuth = require("../auth/requireAuth");
 
 module.exports = (app) => {
-    app.post('/local', requireAuth, locaisController.createLocal
+  app.post(
+    "/local",
+    requireAuth,
+    locaisController.createLocal
     /*
         #swagger.tags = ["Locais"]
         #swagger.summary = "Cria um novo local"
@@ -28,7 +31,16 @@ module.exports = (app) => {
             description: 'Local criado com sucesso',
             schema: {
                 message: 'Local criado com sucesso.',
-                local_id: 10
+                local: {
+                    local_id: 10,
+                    local_municipio_id: 4569,
+                    local_estado: "SC",
+                    local_bairro: "Centro",
+                    local_rua: "Rua das Flores",
+                    local_complemento: "Próximo à praça",
+                    local_latitude: -26.9311,
+                    local_longitude: -53.0025
+                }
             }
         }
 
@@ -45,9 +57,13 @@ module.exports = (app) => {
                 error: 'Erro ao criar local.'
             }
         }
-    */);
+    */
+  );
 
-    app.get('/locais', requireAuth, locaisController.getLocais
+  app.get(
+    "/locais",
+    requireAuth,
+    locaisController.getLocais
     /*
         #swagger.tags = ["Locais"]
         #swagger.summary = "Lista todos os locais"
@@ -79,9 +95,13 @@ module.exports = (app) => {
                 error: 'Erro ao buscar locais.'
             }
         }
-    */);
+    */
+  );
 
-    app.get('/local/:local_id', requireAuth, locaisController.getLocalById
+  app.get(
+    "/local/:local_id",
+    requireAuth,
+    locaisController.getLocalById
     /*
         #swagger.tags = ["Locais"]
         #swagger.summary = "Obtém um local pelo ID"
@@ -116,7 +136,7 @@ module.exports = (app) => {
         #swagger.responses[404] = {
             description: 'Local não encontrado',
             schema: {
-                error: 'Local não encontado.'
+                error: 'Local não encontrado.'
             }
         }
 
@@ -126,9 +146,13 @@ module.exports = (app) => {
                 error: 'Erro ao buscar local por ID.'
             }
         }
-    */);
+    */
+  );
 
-    app.get('/locais/search', requireAuth, locaisController.searchLocais
+  app.get(
+    "/locais/search",
+    requireAuth,
+    locaisController.searchLocais
     /*
         #swagger.tags = ["Locais"]
         #swagger.summary = "Busca locais por termo"
@@ -175,9 +199,13 @@ module.exports = (app) => {
                 error: 'Erro ao buscar locais.'
             }
         }
-    */);
+    */
+  );
 
-    app.put('/local/:local_id', requireAuth, locaisController.updateLocal
+  app.put(
+    "/local/:local_id",
+    requireAuth,
+    locaisController.updateLocal
     /*
         #swagger.tags = ["Locais"]
         #swagger.summary = "Atualiza um local existente"
@@ -232,6 +260,53 @@ module.exports = (app) => {
                 error: 'Erro ao atualizar local.'
             }
         }
-    */);
+    */
+  );
 
+  app.delete(
+    "/local/:local_id",
+    requireAuth,
+    locaisController.deleteLocal
+    /*
+        #swagger.tags = ["Locais"]
+        #swagger.summary = "Exclui (soft delete) um local existente"
+        #swagger.description = 'Marca o local como excluído no sistema, sem removê-lo fisicamente do banco de dados.'
+
+        #swagger.parameters['local_id'] = {
+            in: 'path',
+            description: 'ID do local a ser excluído',
+            required: true,
+            type: 'integer',
+            example: 10
+        }
+
+        #swagger.responses[200] = {
+            description: 'Local excluído com sucesso',
+            schema: {
+                message: 'Local excluído com sucesso.'
+            }
+        }
+
+        #swagger.responses[400] = {
+            description: 'ID do local não informado',
+            schema: {
+                error: 'ID do local é obrigatório.'
+            }
+        }
+
+        #swagger.responses[404] = {
+            description: 'Local não encontrado',
+            schema: {
+                error: 'Local não encontrado.'
+            }
+        }
+
+        #swagger.responses[500] = {
+            description: 'Erro interno do servidor',
+            schema: {
+                error: 'Erro ao excluir local.'
+            }
+        }
+    */
+  );
 };

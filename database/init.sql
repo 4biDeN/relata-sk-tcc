@@ -1,12 +1,14 @@
 begin;
 
--- criação da tabela de tipo de usuário
+set time zone 'America/Sao_Paulo';
+
+create extension if not exists postgis;
+
 create table if not exists t_user_type (
     user_type_id serial primary key,
     user_type_name text not null unique
 );
 
--- criação da tabela de usuários
 create table if not exists t_usuario (
     user_id serial primary key,
     user_username text not null,
@@ -24,7 +26,6 @@ create table if not exists t_usuario (
     constraint chk_documento_11 check (char_length(user_documento) = 11)
 );
 
--- criação da tabela de status de reclamação
 create table if not exists t_ocorrencia_status (
     ocorrencia_status_id serial primary key,
     ocorrencia_status_nome text not null unique
@@ -56,10 +57,10 @@ create table if not exists t_local (
     local_bairro varchar(50) not null,
     local_rua varchar(100) not null,
     local_complemento varchar(100),
-    local_latitude decimal(10, 8),
-    local_longitude decimal(11, 8)
+    location geography(point, 4326) not null,
+    local_excluido boolean not null default false
 );
--- criação da tabela de reclamações
+
 create table if not exists t_ocorrencia (
     ocorrencia_id serial primary key,
     ocorrencia_user_id integer not null references t_usuario(user_id),
@@ -72,6 +73,7 @@ create table if not exists t_ocorrencia (
     ocorrencia_local_id integer references t_local(local_id),
     ocorrencia_prioridade smallint not null default 2 references t_ocorrencia_prioridade(ocorrencia_prioridade_id),
     updated_at timestamp not null default current_timestamp,
+    ocorrencia_atribuida integer not null default 1 references t_user_type(user_type_id),
     ocorrencia_excluida boolean not null default false,
     ocorrencia_tsv tsvector
 );
@@ -92,7 +94,6 @@ create table if not exists t_ocorrencia_comentario (
     comentario_excluido boolean not null default false
 );
 
--- criação da tabela de imagens de reclamação
 create table t_ocorrencia_imagem (
     ocorrencia_imagem_id serial primary key,
     ocorrencia_id integer not null references t_ocorrencia(ocorrencia_id),
@@ -162,7 +163,7 @@ for each row execute function set_updated_at();
 create index if not exists ix_ocorrencia_status_data on t_ocorrencia(ocorrencia_status, ocorrencia_data desc);
 create index if not exists ix_ocorrencia_user_data on t_ocorrencia(ocorrencia_user_id, ocorrencia_data desc);
 
-create index if not exists ix_local_geo on t_local(local_latitude, local_longitude);
+create index if not exists t_local_location_gix on t_local using gist (location);
 
 insert into t_uf (uf_nome, uf_sigla, uf_ibge) 
 values 
@@ -495,7 +496,9 @@ on conflict (municipio_ibge) do nothing;
 
 insert into t_user_type (user_type_name) values
 ('Cidadão'),
-('Administrador')
+('Administrador'),
+('DMER'),
+('DOSU')
 on conflict (user_type_name) do nothing;
 
 insert into t_ocorrencia_status (ocorrencia_status_nome) values
@@ -519,4 +522,4 @@ TODO: Criar insert com os dados padrões de logradouros do município de Saudade
 TODO: Criar insert com dados ficticios para poppulação do banco de dados para agilizar os testes
 */
 
-COMMIT;
+commit;

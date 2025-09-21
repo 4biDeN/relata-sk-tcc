@@ -642,7 +642,7 @@
           "Ocorrências"
         ],
         "summary": "Criar uma nova ocorrência",
-        "description": "Endpoint para registrar uma ocorrência vinculada a um local e a um usuário.",
+        "description": "Registra uma ocorrência vinculada a um local e opcionalmente a um usuário autenticado.",
         "parameters": [
           {
             "name": "body",
@@ -737,15 +737,12 @@
               }
             }
           },
-          "400": {
-            "description": "Erro de validação ou dados inválidos"
-          },
           "401": {
             "description": "Não autorizado",
             "schema": {
               "type": "object",
               "properties": {
-                "mensagem": {
+                "message": {
                   "type": "string",
                   "example": "Token de autenticação inválido ou ausente"
                 }
@@ -755,8 +752,68 @@
               }
             }
           },
+          "409": {
+            "description": "Conflito de dados",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Conflito de dados"
+                },
+                "detail": {
+                  "type": "string",
+                  "example": "Descrição do conflito"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "422": {
+            "description": "Falha de validação",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Validação falhou"
+                },
+                "errors": {
+                  "type": "array",
+                  "example": [
+                    "ocorrencia_titulo é obrigatório",
+                    "local.local_municipio_id, local.local_estado, local.local_bairro e local.local_rua são obrigatórios"
+                  ],
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
           "500": {
-            "description": "Erro Interno do Servidor"
+            "description": "Erro interno do servidor",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Erro ao criar ocorrência"
+                },
+                "detail": {
+                  "type": "string",
+                  "example": "Descrição do erro"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
           }
         }
       }
@@ -767,12 +824,12 @@
           "Ocorrências"
         ],
         "summary": "Busca dinâmica de ocorrências",
-        "description": "\r  Permite buscar ocorrências de forma dinâmica, filtrando por status, prioridade, título ou descrição.<br>\r  <b>Parâmetros de consulta (query):</b>\r  <ul>\r  <li><b>field</b> (opcional): Campo para filtrar. Valores possíveis: <code>status</code>, <code>prioridade</code>, <code>titulo</code>, <code>descricao</code>. Padrão: <code>titulo</code>.</li>\r  <li><b>value</b> (opcional): Valor a ser pesquisado. Para <code>status</code> e <code>prioridade</code>, informe o <b>ID</b> correspondente. Para <code>titulo</code> e <code>descricao</code>, informe um texto.</li>\r  <li><b>orderField</b> (opcional): Campo para ordenação. Valores possíveis: <code>data</code>, <code>status</code>, <code>prioridade</code>, <code>titulo</code>. Padrão: <code>data</code>.</li>\r  <li><b>orderDir</b> (opcional): Direção da ordenação. Valores possíveis: <code>asc</code> ou <code>desc</code>. Padrão: <code>desc</code>.</li>\r  <li><b>limit</b> (opcional): Número máximo de resultados por página. Padrão: <code>10</code>.</li>\r  <li><b>offset</b> (opcional): Quantidade de registros a pular (para paginação). Padrão: <code>0</code>.</li>\r  </ul>\r  <b>Exemplos de uso:</b>\r  <ul>\r  <li><code>/ocorrencias/search?field=status&value=1</code> (busca por status ID 1)</li>\r  <li><code>/ocorrencias/search?field=prioridade&value=2</code> (busca por prioridade ID 2)</li>\r  <li><code>/ocorrencias/search?field=titulo&value=buraco</code> (busca por título contendo \"buraco\")</li>\r  <li><code>/ocorrencias/search?orderField=prioridade&orderDir=asc&limit=5</code> (ordena por prioridade, ascendente, 5 por página)</li>\r  </ul>\r  <b>Status HTTP:</b>\r  <ul>\r  <li><b>200</b>: Sucesso, retorna lista de ocorrências.</li>\r  <li><b>400</b>: Parâmetro inválido.</li>\r  <li><b>404</b>: Nenhuma ocorrência encontrada.</li>\r  <li><b>401</b>: Não autorizado.</li>\r  <li><b>500</b>: Erro interno do servidor.</li>\r  </ul>\r  ",
+        "description": "Filtra por status, prioridade, título ou descrição, com ordenação e paginação.",
         "parameters": [
           {
             "name": "field",
             "in": "query",
-            "description": "Campo para filtrar (status, prioridade, titulo, descricao)",
+            "description": "Campo de filtro (status|prioridade|titulo|descricao)",
             "required": false,
             "type": "string",
             "example": "status"
@@ -780,7 +837,7 @@
           {
             "name": "value",
             "in": "query",
-            "description": "Valor do filtro (ID para status/prioridade, texto para titulo/descricao)",
+            "description": "Valor do filtro. Para status/prioridade usar o ID; para titulo/descricao usar texto.",
             "required": false,
             "type": "string",
             "example": "1"
@@ -788,7 +845,7 @@
           {
             "name": "orderField",
             "in": "query",
-            "description": "Campo para ordenação (data, status, prioridade, titulo)",
+            "description": "Campo de ordenação (data|status|prioridade|titulo)",
             "required": false,
             "type": "string",
             "example": "data"
@@ -796,7 +853,7 @@
           {
             "name": "orderDir",
             "in": "query",
-            "description": "Direção da ordenação (asc ou desc)",
+            "description": "Direção da ordenação (asc|desc)",
             "required": false,
             "type": "string",
             "example": "desc"
@@ -804,7 +861,7 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "Limite de resultados por página",
+            "description": "Quantidade de registros por página",
             "required": false,
             "type": "integer",
             "example": 10
@@ -812,7 +869,7 @@
           {
             "name": "offset",
             "in": "query",
-            "description": "Quantidade de registros a pular",
+            "description": "Quantidade de registros a pular (paginações subsequentes)",
             "required": false,
             "type": "integer",
             "example": 0
@@ -820,7 +877,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Lista de ocorrências encontradas",
+            "description": "Lista de ocorrências",
             "schema": {
               "type": "array",
               "items": {
@@ -853,6 +910,10 @@
                   "ocorrencia_data": {
                     "type": "string",
                     "example": "2025-09-02T15:25:00.000Z"
+                  },
+                  "ocorrencia_anonima": {
+                    "type": "boolean",
+                    "example": false
                   }
                 }
               },
@@ -862,7 +923,7 @@
             }
           },
           "400": {
-            "description": "Parâmetro inválido",
+            "description": "Parâmetros inválidos",
             "schema": {
               "type": "object",
               "properties": {
@@ -898,7 +959,7 @@
               "properties": {
                 "message": {
                   "type": "string",
-                  "example": "Nenhuma ocorrência encontrada."
+                  "example": "Nenhuma ocorrência encontrada"
                 }
               },
               "xml": {
@@ -913,11 +974,774 @@
               "properties": {
                 "message": {
                   "type": "string",
-                  "example": "Erro ao Buscar ocorrencias"
+                  "example": "Erro ao buscar ocorrências"
                 },
                 "detail": {
                   "type": "string",
-                  "example": "Descrição do erro."
+                  "example": "Descrição do erro"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ocorrencias/fulltext": {
+      "get": {
+        "tags": [
+          "Ocorrências"
+        ],
+        "summary": "Busca full-text em ocorrências",
+        "description": "Pesquisa por termo livre em título e descrição, com paginação.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Termo de busca (obrigatório)",
+            "required": true,
+            "type": "string",
+            "example": "iluminação"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Quantidade por página",
+            "required": false,
+            "type": "integer",
+            "example": 10
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "Deslocamento para paginação",
+            "required": false,
+            "type": "integer",
+            "example": 0
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resultados da busca",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "ocorrencia_id": {
+                    "type": "number",
+                    "example": 21
+                  },
+                  "ocorrencia_protocolo": {
+                    "type": "string",
+                    "example": "2025-000021"
+                  },
+                  "ocorrencia_titulo": {
+                    "type": "string",
+                    "example": "Iluminação pública apagada"
+                  },
+                  "ocorrencia_descricao": {
+                    "type": "string",
+                    "example": "Poste sem luz na Av. Central"
+                  },
+                  "ocorrencia_data": {
+                    "type": "string",
+                    "example": "2025-09-12T19:10:00.000Z"
+                  },
+                  "status": {
+                    "type": "string",
+                    "example": "Aberta"
+                  },
+                  "prioridade": {
+                    "type": "string",
+                    "example": "Normal"
+                  }
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "400": {
+            "description": "Parâmetro obrigatório ausente",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Parâmetro q é obrigatório"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "401": {
+            "description": "Não autorizado",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Token de autenticação inválido ou ausente"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "404": {
+            "description": "Nenhum resultado encontrado",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Nenhuma ocorrência encontrada para o termo informado"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno do servidor",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Erro na busca full-text"
+                },
+                "detail": {
+                  "type": "string",
+                  "example": "Descrição do erro"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ocorrencias/by-status": {
+      "get": {
+        "tags": [
+          "Ocorrências"
+        ],
+        "summary": "Listar por status",
+        "description": "Lista ocorrências filtrando pelo ID do status, com paginação.",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "description": "ID do status",
+            "required": true,
+            "type": "integer",
+            "example": 1
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Quantidade por página",
+            "required": false,
+            "type": "integer",
+            "example": 10
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "Deslocamento para paginação",
+            "required": false,
+            "type": "integer",
+            "example": 0
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista filtrada por status",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "ocorrencia_id": {
+                    "type": "number",
+                    "example": 7
+                  },
+                  "ocorrencia_protocolo": {
+                    "type": "string",
+                    "example": "2025-000007"
+                  },
+                  "ocorrencia_titulo": {
+                    "type": "string",
+                    "example": "Calçada danificada"
+                  },
+                  "ocorrencia_descricao": {
+                    "type": "string",
+                    "example": "Risco de acidentes"
+                  },
+                  "status": {
+                    "type": "string",
+                    "example": "Aberta"
+                  },
+                  "prioridade": {
+                    "type": "string",
+                    "example": "Alta"
+                  },
+                  "ocorrencia_data": {
+                    "type": "string",
+                    "example": "2025-09-08T09:30:00.000Z"
+                  }
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "400": {
+            "description": "Parâmetro inválido",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "status inválido"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "401": {
+            "description": "Não autorizado",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Token de autenticação inválido ou ausente"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "404": {
+            "description": "Nenhum registro",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Nenhuma ocorrência encontrada para o status informado"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno do servidor",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Erro ao listar por status"
+                },
+                "detail": {
+                  "type": "string",
+                  "example": "Descrição do erro"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ocorrencias/by-prioridade": {
+      "get": {
+        "tags": [
+          "Ocorrências"
+        ],
+        "summary": "Listar por prioridade",
+        "description": "Lista ocorrências filtrando pelo ID da prioridade, com paginação.",
+        "parameters": [
+          {
+            "name": "prioridade",
+            "in": "query",
+            "description": "ID da prioridade (1 a 4)",
+            "required": true,
+            "type": "integer",
+            "example": 2
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Quantidade por página",
+            "required": false,
+            "type": "integer",
+            "example": 10
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "Deslocamento para paginação",
+            "required": false,
+            "type": "integer",
+            "example": 0
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista filtrada por prioridade",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "ocorrencia_id": {
+                    "type": "number",
+                    "example": 33
+                  },
+                  "ocorrencia_protocolo": {
+                    "type": "string",
+                    "example": "2025-000033"
+                  },
+                  "ocorrencia_titulo": {
+                    "type": "string",
+                    "example": "Vazamento de água"
+                  },
+                  "ocorrencia_descricao": {
+                    "type": "string",
+                    "example": "Vazamento constante na esquina"
+                  },
+                  "prioridade": {
+                    "type": "string",
+                    "example": "Alta"
+                  },
+                  "status": {
+                    "type": "string",
+                    "example": "Em Análise"
+                  },
+                  "ocorrencia_data": {
+                    "type": "string",
+                    "example": "2025-09-14T11:05:00.000Z"
+                  }
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "400": {
+            "description": "Parâmetro inválido",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "prioridade inválida"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "401": {
+            "description": "Não autorizado",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Token de autenticação inválido ou ausente"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "404": {
+            "description": "Nenhum registro",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Nenhuma ocorrência encontrada para a prioridade informada"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno do servidor",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Erro ao listar por prioridade"
+                },
+                "detail": {
+                  "type": "string",
+                  "example": "Descrição do erro"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ocorrencias/by-date": {
+      "get": {
+        "tags": [
+          "Ocorrências"
+        ],
+        "summary": "Listar por período (data inicial/final)",
+        "description": "Lista ocorrências dentro de um intervalo de tempo, com ordenação e paginação.",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "description": "Data inicial (ISO 8601)",
+            "required": false,
+            "type": "string",
+            "example": "2025-09-01T00:00:00.000Z"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "Data final (ISO 8601)",
+            "required": false,
+            "type": "string",
+            "example": "2025-09-30T23:59:59.999Z"
+          },
+          {
+            "name": "orderDir",
+            "in": "query",
+            "description": "Ordenação por data (asc|desc)",
+            "required": false,
+            "type": "string",
+            "example": "desc"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Quantidade por página",
+            "required": false,
+            "type": "integer",
+            "example": 10
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "Deslocamento para paginação",
+            "required": false,
+            "type": "integer",
+            "example": 0
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista dentro do período",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "ocorrencia_id": {
+                    "type": "number",
+                    "example": 18
+                  },
+                  "ocorrencia_protocolo": {
+                    "type": "string",
+                    "example": "2025-000018"
+                  },
+                  "ocorrencia_titulo": {
+                    "type": "string",
+                    "example": "Lixo acumulado"
+                  },
+                  "ocorrencia_descricao": {
+                    "type": "string",
+                    "example": "Cantos da rua com lixo"
+                  },
+                  "ocorrencia_data": {
+                    "type": "string",
+                    "example": "2025-09-11T07:45:00.000Z"
+                  },
+                  "status": {
+                    "type": "string",
+                    "example": "Em Andamento"
+                  },
+                  "prioridade": {
+                    "type": "string",
+                    "example": "Normal"
+                  }
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "400": {
+            "description": "Parâmetros inválidos",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "from inválido"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "401": {
+            "description": "Não autorizado",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Token de autenticação inválido ou ausente"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "404": {
+            "description": "Nenhum registro",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Nenhuma ocorrência encontrada no período informado"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno do servidor",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Erro ao listar por data"
+                },
+                "detail": {
+                  "type": "string",
+                  "example": "Descrição do erro"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ocorrencias/by-local": {
+      "get": {
+        "tags": [
+          "Ocorrências"
+        ],
+        "summary": "Listar por local (município/bairro/rua)",
+        "description": "Lista ocorrências filtrando por município, bairro e/ou rua, com paginação.",
+        "parameters": [
+          {
+            "name": "municipio",
+            "in": "query",
+            "description": "Nome do município (match parcial, case-insensitive)",
+            "required": false,
+            "type": "string",
+            "example": "Saudades"
+          },
+          {
+            "name": "bairro",
+            "in": "query",
+            "description": "Nome do bairro (match parcial)",
+            "required": false,
+            "type": "string",
+            "example": "Centro"
+          },
+          {
+            "name": "rua",
+            "in": "query",
+            "description": "Nome da rua (match parcial)",
+            "required": false,
+            "type": "string",
+            "example": "Rua das Flores"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Quantidade por página",
+            "required": false,
+            "type": "integer",
+            "example": 10
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "Deslocamento para paginação",
+            "required": false,
+            "type": "integer",
+            "example": 0
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista filtrada por local",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "ocorrencia_id": {
+                    "type": "number",
+                    "example": 44
+                  },
+                  "ocorrencia_protocolo": {
+                    "type": "string",
+                    "example": "2025-000044"
+                  },
+                  "ocorrencia_titulo": {
+                    "type": "string",
+                    "example": "Arvore caída"
+                  },
+                  "ocorrencia_descricao": {
+                    "type": "string",
+                    "example": "Árvore bloqueando calçada"
+                  },
+                  "ocorrencia_data": {
+                    "type": "string",
+                    "example": "2025-09-15T14:20:00.000Z"
+                  },
+                  "status": {
+                    "type": "string",
+                    "example": "Aberta"
+                  },
+                  "prioridade": {
+                    "type": "string",
+                    "example": "Alta"
+                  },
+                  "municipio_nome": {
+                    "type": "string",
+                    "example": "Saudades"
+                  },
+                  "local_estado": {
+                    "type": "string",
+                    "example": "SC"
+                  },
+                  "local_bairro": {
+                    "type": "string",
+                    "example": "Centro"
+                  },
+                  "local_rua": {
+                    "type": "string",
+                    "example": "Rua das Flores"
+                  }
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "400": {
+            "description": "Parâmetros obrigatórios ausentes",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Informe ao menos um parâmetro: municipio, bairro ou rua"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "401": {
+            "description": "Não autorizado",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Token de autenticação inválido ou ausente"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "404": {
+            "description": "Nenhum registro",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Nenhuma ocorrência encontrada para o local informado"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno do servidor",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Erro ao listar por local"
+                },
+                "detail": {
+                  "type": "string",
+                  "example": "Descrição do erro"
                 }
               },
               "xml": {
@@ -933,20 +1757,21 @@
         "tags": [
           "Ocorrências"
         ],
-        "summary": "Buscar uma ocorrência",
-        "description": "Retorna os detalhes de uma ocorrência pelo seu ID.",
+        "summary": "Buscar ocorrência por ID",
+        "description": "Retorna os detalhes de uma ocorrência a partir do seu identificador.",
         "parameters": [
           {
             "name": "id",
             "in": "path",
             "required": true,
-            "type": "string",
-            "description": "ID da ocorrência"
+            "type": "integer",
+            "description": "ID da ocorrência",
+            "example": 10
           }
         ],
         "responses": {
           "200": {
-            "description": "Dados da ocorrência",
+            "description": "Ocorrência encontrada",
             "schema": {
               "type": "object",
               "properties": {
@@ -966,6 +1791,14 @@
                   "type": "string",
                   "example": "2025-09-02T15:25:00.000Z"
                 },
+                "ocorrencia_protocolo": {
+                  "type": "string",
+                  "example": "2025-000010"
+                },
+                "ocorrencia_anonima": {
+                  "type": "boolean",
+                  "example": false
+                },
                 "ocorrencia_status_nome": {
                   "type": "string",
                   "example": "Aberta"
@@ -973,6 +1806,41 @@
                 "user_username": {
                   "type": "string",
                   "example": "joao.silva"
+                },
+                "municipio_nome": {
+                  "type": "string",
+                  "example": "Saudades"
+                },
+                "local_estado": {
+                  "type": "string",
+                  "example": "SC"
+                },
+                "local_bairro": {
+                  "type": "string",
+                  "example": "Centro"
+                },
+                "local_rua": {
+                  "type": "string",
+                  "example": "Rua das Flores"
+                },
+                "local_complemento": {
+                  "type": "string",
+                  "example": "Próximo ao mercado"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "400": {
+            "description": "Parâmetro inválido",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Parâmetro id inválido"
                 }
               },
               "xml": {
@@ -985,7 +1853,7 @@
             "schema": {
               "type": "object",
               "properties": {
-                "mensagem": {
+                "message": {
                   "type": "string",
                   "example": "Token de autenticação inválido ou ausente"
                 }
@@ -996,125 +1864,13 @@
             }
           },
           "404": {
-            "description": "Ocorrência não encontrada"
-          },
-          "500": {
-            "description": "Erro Interno do Servidor"
-          }
-        }
-      },
-      "put": {
-        "tags": [
-          "Ocorrências"
-        ],
-        "summary": "Atualiza campos permitidos de uma ocorrência",
-        "description": "\r  Atualiza apenas os campos permitidos de uma ocorrência existente pelo seu ID.<br>\r  <b>Campos permitidos para atualização:</b>\r  <ul>\r  <li>ocorrencia_titulo</li>\r  <li>ocorrencia_descricao</li>\r  <li>ocorrencia_prioridade</li>\r  <li>ocorrencia_status</li>\r  </ul>\r  <b>Observações:</b>\r  <ul>\r  <li>Se nenhum campo permitido for enviado, retorna erro 400.</li>\r  <li>Se a ocorrência não existir, retorna erro 404.</li>\r  <li>É necessário estar autenticado para atualizar uma ocorrência.</li>\r  </ul>\r  ",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "type": "string",
-            "description": "ID da ocorrência a ser atualizada"
-          },
-          {
-            "name": "body",
-            "in": "body",
-            "description": "Informe ao menos um dos campos permitidos para atualização",
-            "required": true,
-            "schema": {
-              "type": "object",
-              "properties": {
-                "ocorrencia_titulo": {
-                  "type": "string",
-                  "example": "Título atualizado"
-                },
-                "ocorrencia_descricao": {
-                  "type": "string",
-                  "example": "Descrição detalhada da ocorrência"
-                },
-                "ocorrencia_prioridade": {
-                  "type": "number",
-                  "example": 2
-                },
-                "ocorrencia_status": {
-                  "type": "number",
-                  "example": 1
-                }
-              }
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Ocorrência atualizada com sucesso",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "ocorrencia_id": {
-                  "type": "number",
-                  "example": 10
-                },
-                "ocorrencia_titulo": {
-                  "type": "string",
-                  "example": "Título atualizado"
-                },
-                "ocorrencia_descricao": {
-                  "type": "string",
-                  "example": "Descrição detalhada da ocorrência"
-                },
-                "ocorrencia_prioridade": {
-                  "type": "number",
-                  "example": 2
-                },
-                "ocorrencia_status": {
-                  "type": "number",
-                  "example": 1
-                }
-              },
-              "xml": {
-                "name": "main"
-              }
-            }
-          },
-          "400": {
-            "description": "Nenhum campo permitido para atualização informado",
+            "description": "Não encontrada",
             "schema": {
               "type": "object",
               "properties": {
                 "message": {
                   "type": "string",
-                  "example": "Nenhum campo permitido para atualização informado."
-                }
-              },
-              "xml": {
-                "name": "main"
-              }
-            }
-          },
-          "401": {
-            "description": "Não autorizado. Token de autenticação inválido ou ausente.",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "message": {
-                  "type": "string",
-                  "example": "Não Autenticado"
-                }
-              },
-              "xml": {
-                "name": "main"
-              }
-            }
-          },
-          "404": {
-            "description": "Ocorrência não encontrada ou nenhum campo atualizado",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "message": {
-                  "type": "string",
-                  "example": "Ocorrência não encontrada ou nenhum campo atualizado."
+                  "example": "Ocorrência não encontrada"
                 }
               },
               "xml": {
@@ -1129,7 +1885,168 @@
               "properties": {
                 "message": {
                   "type": "string",
-                  "example": "Descrição do erro."
+                  "example": "Erro ao buscar ocorrência"
+                },
+                "detail": {
+                  "type": "string",
+                  "example": "Descrição do erro"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Ocorrências"
+        ],
+        "summary": "Atualizar ocorrência",
+        "description": "Atualiza campos permitidos de uma ocorrência pelo ID.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "description": "ID da ocorrência",
+            "example": 10
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "description": "Campos permitidos para atualização",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "ocorrencia_titulo": {
+                  "type": "string",
+                  "example": "Título atualizado"
+                },
+                "ocorrencia_descricao": {
+                  "type": "string",
+                  "example": "Descrição detalhada"
+                },
+                "ocorrencia_prioridade": {
+                  "type": "number",
+                  "example": 2
+                },
+                "ocorrencia_status": {
+                  "type": "number",
+                  "example": 3
+                },
+                "ocorrencia_anonima": {
+                  "type": "boolean",
+                  "example": false
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ocorrência atualizada com sucesso",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Ocorrência atualizada com sucesso"
+                },
+                "ocorrencia": {
+                  "type": "object",
+                  "properties": {
+                    "ocorrencia_id": {
+                      "type": "number",
+                      "example": 10
+                    },
+                    "ocorrencia_status": {
+                      "type": "number",
+                      "example": 3
+                    }
+                  }
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "400": {
+            "description": "Parâmetros inválidos",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Parâmetro id inválido"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "401": {
+            "description": "Não autorizado",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Token de autenticação inválido ou ausente"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrada",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Ocorrência não encontrada"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "422": {
+            "description": "Falha de validação",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "ocorrencia_status inválido"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno do servidor",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Erro ao atualizar ocorrência"
+                },
+                "detail": {
+                  "type": "string",
+                  "example": "Descrição do erro"
                 }
               },
               "xml": {
@@ -1143,27 +2060,55 @@
         "tags": [
           "Ocorrências"
         ],
-        "summary": "Deletar uma ocorrência",
-        "description": "Marca uma ocorrência como excluída pelo seu ID.",
+        "summary": "Excluir ocorrência",
+        "description": "Marca uma ocorrência como excluída (soft delete) pelo ID informado.",
         "parameters": [
           {
             "name": "id",
             "in": "path",
             "required": true,
-            "type": "string",
-            "description": "ID da ocorrência"
+            "type": "integer",
+            "description": "ID da ocorrência",
+            "example": 15
           }
         ],
         "responses": {
-          "204": {
-            "description": "Ocorrência deletada com sucesso"
+          "200": {
+            "description": "Ocorrência excluída com sucesso",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Ocorrência excluída com sucesso"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "400": {
+            "description": "Parâmetro inválido",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Parâmetro id inválido"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
           },
           "401": {
             "description": "Não autorizado",
             "schema": {
               "type": "object",
               "properties": {
-                "mensagem": {
+                "message": {
                   "type": "string",
                   "example": "Token de autenticação inválido ou ausente"
                 }
@@ -1173,8 +2118,39 @@
               }
             }
           },
+          "404": {
+            "description": "Não encontrada",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Ocorrência não encontrada"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
           "500": {
-            "description": "Erro Interno do Servidor"
+            "description": "Erro interno do servidor",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Erro ao excluir ocorrência"
+                },
+                "detail": {
+                  "type": "string",
+                  "example": "Descrição do erro"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
           }
         }
       }
@@ -1184,15 +2160,16 @@
         "tags": [
           "Ocorrências"
         ],
-        "summary": "Buscar ocorrências por usuário",
-        "description": "Retorna todas as ocorrências feitas por um usuário específico.",
+        "summary": "Listar ocorrências de um usuário",
+        "description": "Retorna todas as ocorrências registradas por um usuário específico, filtrando pelo seu ID.",
         "parameters": [
           {
             "name": "user_id",
             "in": "path",
             "required": true,
-            "type": "string",
-            "description": "ID do usuário"
+            "type": "integer",
+            "description": "ID do usuário",
+            "example": 5
           }
         ],
         "responses": {
@@ -1205,19 +2182,27 @@
                 "properties": {
                   "ocorrencia_id": {
                     "type": "number",
-                    "example": 10
+                    "example": 12
                   },
                   "ocorrencia_titulo": {
                     "type": "string",
-                    "example": "Buraco na rua"
+                    "example": "Iluminação pública queimada"
                   },
                   "ocorrencia_data": {
                     "type": "string",
-                    "example": "2025-09-02T15:25:00.000Z"
+                    "example": "2025-09-10T18:40:00.000Z"
                   },
-                  "ocorrencia_status": {
-                    "type": "number",
-                    "example": 1
+                  "ocorrencia_protocolo": {
+                    "type": "string",
+                    "example": "2025-000012"
+                  },
+                  "ocorrencia_anonima": {
+                    "type": "boolean",
+                    "example": false
+                  },
+                  "ocorrencia_status_nome": {
+                    "type": "string",
+                    "example": "Em Análise"
                   }
                 }
               },
@@ -1226,14 +2211,192 @@
               }
             }
           },
+          "400": {
+            "description": "Parâmetro inválido",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Parâmetro user_id inválido"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
           "401": {
-            "description": "Não autorizado"
+            "description": "Não autorizado",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Token de autenticação inválido ou ausente"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
           },
           "404": {
-            "description": "Não Encontrado"
+            "description": "Nenhuma ocorrência encontrada para este usuário",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Nenhuma ocorrência encontrada para este usuário"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
           },
           "500": {
-            "description": "Erro Interno do Servidor"
+            "description": "Erro interno do servidor",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Erro ao buscar ocorrências do usuário"
+                },
+                "detail": {
+                  "type": "string",
+                  "example": "Descrição do erro"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ocorrencias/{ocorrencia_atribuida}": {
+      "get": {
+        "tags": [
+          "Ocorrências"
+        ],
+        "summary": "Listar ocorrências de um Setor",
+        "description": "Retorna todas as ocorrências registradas para um Setor específico, filtrando pelo seu Setor.",
+        "parameters": [
+          {
+            "name": "ocorrencia_atribuida",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "description": "ID do Setor",
+            "example": 5
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de ocorrências do Setor",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "ocorrencia_id": {
+                    "type": "number",
+                    "example": 12
+                  },
+                  "ocorrencia_titulo": {
+                    "type": "string",
+                    "example": "Iluminação pública queimada"
+                  },
+                  "ocorrencia_data": {
+                    "type": "string",
+                    "example": "2025-09-10T18:40:00.000Z"
+                  },
+                  "ocorrencia_protocolo": {
+                    "type": "string",
+                    "example": "2025-000012"
+                  },
+                  "ocorrencia_anonima": {
+                    "type": "boolean",
+                    "example": false
+                  },
+                  "ocorrencia_status_nome": {
+                    "type": "string",
+                    "example": "Em Análise"
+                  }
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "400": {
+            "description": "Parâmetro inválido",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Parâmetro user_id inválido"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "401": {
+            "description": "Não autorizado",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Token de autenticação inválido ou ausente"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "404": {
+            "description": "Nenhuma ocorrência encontrada para este Setor",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Nenhuma ocorrência encontrada para este Setor"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno do servidor",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Erro ao buscar ocorrências do usuário"
+                },
+                "detail": {
+                  "type": "string",
+                  "example": "Descrição do erro"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
           }
         }
       }
@@ -1300,9 +2463,42 @@
                   "type": "string",
                   "example": "Local criado com sucesso."
                 },
-                "local_id": {
-                  "type": "number",
-                  "example": 10
+                "local": {
+                  "type": "object",
+                  "properties": {
+                    "local_id": {
+                      "type": "number",
+                      "example": 10
+                    },
+                    "local_municipio_id": {
+                      "type": "number",
+                      "example": 4569
+                    },
+                    "local_estado": {
+                      "type": "string",
+                      "example": "SC"
+                    },
+                    "local_bairro": {
+                      "type": "string",
+                      "example": "Centro"
+                    },
+                    "local_rua": {
+                      "type": "string",
+                      "example": "Rua das Flores"
+                    },
+                    "local_complemento": {
+                      "type": "string",
+                      "example": "Próximo à praça"
+                    },
+                    "local_latitude": {
+                      "type": "number",
+                      "example": -26.9311
+                    },
+                    "local_longitude": {
+                      "type": "number",
+                      "example": -53.0025
+                    }
+                  }
                 }
               },
               "xml": {
@@ -1495,7 +2691,7 @@
               "properties": {
                 "error": {
                   "type": "string",
-                  "example": "Local não encontado."
+                  "example": "Local não encontrado."
                 }
               },
               "xml": {
@@ -1649,6 +2845,88 @@
                 "error": {
                   "type": "string",
                   "example": "Erro ao atualizar local."
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Locais"
+        ],
+        "summary": "Exclui (soft delete) um local existente",
+        "description": "Marca o local como excluído no sistema, sem removê-lo fisicamente do banco de dados.",
+        "parameters": [
+          {
+            "name": "local_id",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "description": "ID do local a ser excluído",
+            "example": 10
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Local excluído com sucesso",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Local excluído com sucesso."
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "400": {
+            "description": "ID do local não informado",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string",
+                  "example": "ID do local é obrigatório."
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "401": {
+            "description": "Não autorizado"
+          },
+          "404": {
+            "description": "Local não encontrado",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string",
+                  "example": "Local não encontrado."
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno do servidor",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string",
+                  "example": "Erro ao excluir local."
                 }
               },
               "xml": {
