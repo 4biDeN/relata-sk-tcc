@@ -149,6 +149,9 @@
               }
             }
           },
+          "404": {
+            "description": "Não Encontrado"
+          },
           "500": {
             "description": "Erro interno do servidor",
             "schema": {
@@ -259,6 +262,13 @@
         ],
         "summary": "Obtém todos os usuários",
         "description": "Retorna uma lista de todos os usuários cadastrados.",
+        "parameters": [
+          {
+            "name": "slice(7",
+            "in": "header",
+            "type": "string"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Lista de usuários",
@@ -342,6 +352,11 @@
             "type": "integer",
             "description": "ID do usuário a ser buscado",
             "example": 1
+          },
+          {
+            "name": "slice(7",
+            "in": "header",
+            "type": "string"
           }
         ],
         "responses": {
@@ -442,6 +457,11 @@
             "type": "integer",
             "description": "ID do usuário a ser atualizado",
             "example": 1
+          },
+          {
+            "name": "slice(7",
+            "in": "header",
+            "type": "string"
           },
           {
             "name": "body",
@@ -551,6 +571,11 @@
             "type": "integer",
             "description": "ID do usuário a ser Deletado",
             "example": 1
+          },
+          {
+            "name": "slice(7",
+            "in": "header",
+            "type": "string"
           }
         ],
         "responses": {
@@ -644,6 +669,11 @@
         "summary": "Criar uma nova ocorrência",
         "description": "Registra uma ocorrência vinculada a um local e opcionalmente a um usuário autenticado.",
         "parameters": [
+          {
+            "name": "slice(7",
+            "in": "header",
+            "type": "string"
+          },
           {
             "name": "body",
             "in": "body",
@@ -827,6 +857,11 @@
         "description": "Filtra por status, prioridade, título ou descrição, com ordenação e paginação.",
         "parameters": [
           {
+            "name": "slice(7",
+            "in": "header",
+            "type": "string"
+          },
+          {
             "name": "field",
             "in": "query",
             "description": "Campo de filtro (status|prioridade|titulo|descricao)",
@@ -998,6 +1033,11 @@
         "description": "Pesquisa por termo livre em título e descrição, com paginação.",
         "parameters": [
           {
+            "name": "slice(7",
+            "in": "header",
+            "type": "string"
+          },
+          {
             "name": "q",
             "in": "query",
             "description": "Termo de busca (obrigatório)",
@@ -1140,6 +1180,11 @@
         "summary": "Listar por status",
         "description": "Lista ocorrências filtrando pelo ID do status, com paginação.",
         "parameters": [
+          {
+            "name": "slice(7",
+            "in": "header",
+            "type": "string"
+          },
           {
             "name": "status",
             "in": "query",
@@ -1284,6 +1329,11 @@
         "description": "Lista ocorrências filtrando pelo ID da prioridade, com paginação.",
         "parameters": [
           {
+            "name": "slice(7",
+            "in": "header",
+            "type": "string"
+          },
+          {
             "name": "prioridade",
             "in": "query",
             "description": "ID da prioridade (1 a 4)",
@@ -1426,6 +1476,11 @@
         "summary": "Listar por período (data inicial/final)",
         "description": "Lista ocorrências dentro de um intervalo de tempo, com ordenação e paginação.",
         "parameters": [
+          {
+            "name": "slice(7",
+            "in": "header",
+            "type": "string"
+          },
           {
             "name": "from",
             "in": "query",
@@ -1585,6 +1640,11 @@
         "summary": "Listar por local (município/bairro/rua)",
         "description": "Lista ocorrências filtrando por município, bairro e/ou rua, com paginação.",
         "parameters": [
+          {
+            "name": "slice(7",
+            "in": "header",
+            "type": "string"
+          },
           {
             "name": "municipio",
             "in": "query",
@@ -1767,6 +1827,11 @@
             "type": "integer",
             "description": "ID da ocorrência",
             "example": 10
+          },
+          {
+            "name": "slice(7",
+            "in": "header",
+            "type": "string"
           }
         ],
         "responses": {
@@ -1913,6 +1978,11 @@
             "type": "integer",
             "description": "ID da ocorrência",
             "example": 10
+          },
+          {
+            "name": "slice(7",
+            "in": "header",
+            "type": "string"
           },
           {
             "name": "body",
@@ -2070,6 +2140,11 @@
             "type": "integer",
             "description": "ID da ocorrência",
             "example": 15
+          },
+          {
+            "name": "slice(7",
+            "in": "header",
+            "type": "string"
           }
         ],
         "responses": {
@@ -2170,6 +2245,11 @@
             "type": "integer",
             "description": "ID do usuário",
             "example": 5
+          },
+          {
+            "name": "slice(7",
+            "in": "header",
+            "type": "string"
           }
         ],
         "responses": {
@@ -2293,6 +2373,11 @@
             "type": "integer",
             "description": "ID do Setor",
             "example": 5
+          },
+          {
+            "name": "slice(7",
+            "in": "header",
+            "type": "string"
           }
         ],
         "responses": {
@@ -2409,6 +2494,11 @@
         "summary": "Cria um novo local",
         "description": "Cria um novo local com os dados fornecidos.",
         "parameters": [
+          {
+            "name": "slice(7",
+            "in": "header",
+            "type": "string"
+          },
           {
             "name": "body",
             "in": "body",
@@ -2549,6 +2639,13 @@
         ],
         "summary": "Lista todos os locais",
         "description": "Retorna uma lista de todos os locais cadastrados.",
+        "parameters": [
+          {
+            "name": "slice(7",
+            "in": "header",
+            "type": "string"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Lista de locais",
@@ -2632,6 +2729,11 @@
             "type": "integer",
             "description": "ID do local a ser buscado",
             "example": 10
+          },
+          {
+            "name": "slice(7",
+            "in": "header",
+            "type": "string"
           }
         ],
         "responses": {
@@ -2730,6 +2832,11 @@
             "type": "integer",
             "description": "ID do local a ser atualizado",
             "example": 10
+          },
+          {
+            "name": "slice(7",
+            "in": "header",
+            "type": "string"
           },
           {
             "name": "body",
@@ -2868,6 +2975,11 @@
             "type": "integer",
             "description": "ID do local a ser excluído",
             "example": 10
+          },
+          {
+            "name": "slice(7",
+            "in": "header",
+            "type": "string"
           }
         ],
         "responses": {
@@ -2945,6 +3057,11 @@
         "summary": "Busca locais por termo",
         "description": "Busca locais por cidade, bairro ou rua.",
         "parameters": [
+          {
+            "name": "slice(7",
+            "in": "header",
+            "type": "string"
+          },
           {
             "name": "query",
             "in": "query",

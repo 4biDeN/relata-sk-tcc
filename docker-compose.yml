@@ -11,6 +11,7 @@ services:
       - .env
     depends_on:
       - db
+
   db:
     build: ./database
     container_name: api_postgres
@@ -24,6 +25,7 @@ services:
     volumes:
       - db_data:/var/lib/postgresql/data
       - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+
   db-pgadmin:
     image: dpage/pgadmin4:latest
     container_name: pgadmin
@@ -34,9 +36,22 @@ services:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
     ports:
-      - 8020:80
+      - "8020:80"
     volumes:
       - pgadmin_data:/var/lib/pgadmin
+
+  web:
+    build:
+      context: ./relata-sk-front
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE: "http://api_app:3001/api"
+    container_name: quasar_web
+    depends_on:
+      - app
+    ports:
+      - "9000:80"
+    restart: unless-stopped
 
 volumes:
   db_data:
