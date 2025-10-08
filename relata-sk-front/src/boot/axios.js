@@ -5,16 +5,22 @@ axios.defaults.withCredentials = true
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE,
-  withCredentials: true
+  withCredentials: true,
 })
 
-api.interceptors.request.use(cfg => {
+api.interceptors.request.use((cfg) => {
   const token = localStorage.getItem('token')
+
   if (token && token !== 'undefined') {
     cfg.headers.Authorization = `Bearer ${token}`
   } else if (cfg.headers?.Authorization) {
     delete cfg.headers.Authorization
   }
+
+  if (cfg.data instanceof FormData) {
+    delete cfg.headers['Content-Type']
+  }
+
   return cfg
 })
 

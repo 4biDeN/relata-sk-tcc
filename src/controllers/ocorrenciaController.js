@@ -3,8 +3,18 @@ const ocorrenciaService = require("../services/ocorrenciaService");
 const createOcorrencia = async (req, res) => {
   try {
     const body = req.body || {};
+    const files = req.files || [];
     const erros = [];
-    if (!body.ocorrencia_user_id && !body.ocorrencia_anonima)
+
+    if (typeof body.local === "string") {
+      try {
+        body.local = JSON.parse(body.local);
+      } catch {
+        erros.push("Formato inválido para o campo local");
+      }
+    }
+
+    if (!req.user?.sub && !body.ocorrencia_anonima)
       erros.push("ocorrencia_user_id é obrigatório quando não for anônima");
     if (!body.ocorrencia_titulo) erros.push("ocorrencia_titulo é obrigatório");
     if (!body.ocorrencia_descricao)
@@ -24,11 +34,27 @@ const createOcorrencia = async (req, res) => {
       ![1, 2, 3, 4].includes(Number(body.ocorrencia_prioridade))
     )
       erros.push("ocorrencia_prioridade inválida");
+
     if (erros.length)
       return res
         .status(422)
         .json({ message: "Validação falhou", errors: erros });
-    const ocorrencia = await ocorrenciaService.createOcorrencia(body);
+
+    const payload = {
+      ocorrencia_user_id: req.user?.sub || body.ocorrencia_user_id,
+      ocorrencia_anonima:
+        body.ocorrencia_anonima === "true" || body.ocorrencia_anonima === true,
+      ocorrencia_titulo: String(body.ocorrencia_titulo).trim(),
+      ocorrencia_descricao: String(body.ocorrencia_descricao).trim(),
+      ocorrencia_prioridade: body.ocorrencia_prioridade
+        ? Number(body.ocorrencia_prioridade)
+        : 2,
+      local:
+        typeof body.local === "string" ? JSON.parse(body.local) : body.local,
+      files,
+    };
+
+    const ocorrencia = await ocorrenciaService.createOcorrencia(payload);
     return res.status(201).json(ocorrencia);
   } catch (err) {
     const isConflict = String(err.message || "")
@@ -49,9 +75,11 @@ const getOcorrenciaById = async (req, res) => {
     const id = Number(req.params.id);
     if (!Number.isInteger(id) || id <= 0)
       return res.status(400).json({ message: "Parâmetro id inválido" });
+
     const ocorrencia = await ocorrenciaService.getOcorrenciaById(id);
     if (!ocorrencia)
       return res.status(404).json({ message: "Ocorrência não encontrada" });
+
     return res.status(200).json(ocorrencia);
   } catch (err) {
     return res
@@ -65,12 +93,13 @@ const getOcorrenciaByUser = async (req, res) => {
     const userId = Number(req.params.user_id);
     if (!Number.isInteger(userId) || userId <= 0)
       return res.status(400).json({ message: "Parâmetro user_id inválido" });
+
     const ocorrencias = await ocorrenciaService.getOcorrenciaByUser(userId);
-    if (!ocorrencias || ocorrencias.length === 0)
-      return res
-        .status(404)
-        .json({ message: "Nenhuma ocorrência encontrada para este usuário" });
-    return res.status(200).json(ocorrencias);
+
+    return res.status(200).json(Array.isArray(ocorrencias) ? ocorrencias : []);
+    // if (!ocorrencias || ocorrencias.length === 0)
+    //   return res.status(404).json({ message: "Nenhuma ocorrência encontrada para este usuário" })
+    // return res.status(200).json(ocorrencias)
   } catch (err) {
     return res
       .status(500)
@@ -114,11 +143,9 @@ const updateOcorrencia = async (req, res) => {
     for (const f of allowedFields)
       if (req.body[f] !== undefined) updateData[f] = req.body[f];
     if (Object.keys(updateData).length === 0)
-      return res
-        .status(400)
-        .json({
-          message: "Nenhum campo válido para atualização foi fornecido",
-        });
+      return res.status(400).json({
+        message: "Nenhum campo válido para atualização foi fornecido",
+      });
     if (
       updateData.ocorrencia_prioridade &&
       ![1, 2, 3, 4].includes(Number(updateData.ocorrencia_prioridade))
@@ -134,12 +161,10 @@ const updateOcorrencia = async (req, res) => {
     const updated = await ocorrenciaService.updateOcorrencia(id, updateData);
     if (!updated)
       return res.status(404).json({ message: "Ocorrência não encontrada" });
-    return res
-      .status(200)
-      .json({
-        message: "Ocorrência atualizada com sucesso",
-        ocorrencia: updated,
-      });
+    return res.status(200).json({
+      message: "Ocorrência atualizada com sucesso",
+      ocorrencia: updated,
+    });
   } catch (err) {
     return res
       .status(500)
@@ -204,11 +229,9 @@ const getOcorrenciasByPrioridade = async (req, res) => {
       offset
     );
     if (!data || data.length === 0)
-      return res
-        .status(404)
-        .json({
-          message: "Nenhuma ocorrência encontrada para a prioridade informada",
-        });
+      return res.status(404).json({
+        message: "Nenhuma ocorrência encontrada para a prioridade informada",
+      });
     return res.status(200).json(data);
   } catch (err) {
     return res
@@ -230,11 +253,9 @@ const getOcorrenciasByStatus = async (req, res) => {
       offset
     );
     if (!data || data.length === 0)
-      return res
-        .status(404)
-        .json({
-          message: "Nenhuma ocorrência encontrada para o status informado",
-        });
+      return res.status(404).json({
+        message: "Nenhuma ocorrência encontrada para o status informado",
+      });
     return res.status(200).json(data);
   } catch (err) {
     return res
@@ -256,11 +277,9 @@ const searchOcorrenciasFullText = async (req, res) => {
       offset
     );
     if (!data || data.length === 0)
-      return res
-        .status(404)
-        .json({
-          message: "Nenhuma ocorrência encontrada para o termo informado",
-        });
+      return res.status(404).json({
+        message: "Nenhuma ocorrência encontrada para o termo informado",
+      });
     return res.status(200).json(data);
   } catch (err) {
     return res
@@ -290,11 +309,9 @@ const getOcorrenciasByDate = async (req, res) => {
       offset
     );
     if (!data || data.length === 0)
-      return res
-        .status(404)
-        .json({
-          message: "Nenhuma ocorrência encontrada no período informado",
-        });
+      return res.status(404).json({
+        message: "Nenhuma ocorrência encontrada no período informado",
+      });
     return res.status(200).json(data);
   } catch (err) {
     return res
@@ -313,22 +330,18 @@ const getOcorrenciasByLocal = async (req, res) => {
     const limit = Number(req.query.limit ?? 10);
     const offset = Number(req.query.offset ?? 0);
     if (!municipio && !bairro && !rua)
-      return res
-        .status(400)
-        .json({
-          message: "Informe ao menos um parâmetro: municipio, bairro ou rua",
-        });
+      return res.status(400).json({
+        message: "Informe ao menos um parâmetro: municipio, bairro ou rua",
+      });
     const data = await ocorrenciaService.getOcorrenciasByLocal(
       { municipio, bairro, rua },
       limit,
       offset
     );
     if (!data || data.length === 0)
-      return res
-        .status(404)
-        .json({
-          message: "Nenhuma ocorrência encontrada para o local informado",
-        });
+      return res.status(404).json({
+        message: "Nenhuma ocorrência encontrada para o local informado",
+      });
     return res.status(200).json(data);
   } catch (err) {
     return res
@@ -341,20 +354,22 @@ const getOcorrenciaBySetor = async (req, res) => {
   try {
     const ocorrencia_atribuida = Number(req.params.ocorrencia_atribuida);
     if (!Number.isInteger(userId) || userId <= 0)
-      return res.status(400).json({ message: "Parâmetro ocorrencia_atribuida inválido" });
-    const ocorrencias = await ocorrenciaService.getOcorrenciaBySetor(ocorrencia_atribuida);
+      return res
+        .status(400)
+        .json({ message: "Parâmetro ocorrencia_atribuida inválido" });
+    const ocorrencias = await ocorrenciaService.getOcorrenciaBySetor(
+      ocorrencia_atribuida
+    );
     if (!ocorrencias || ocorrencias.length === 0)
       return res
         .status(404)
         .json({ message: "Nenhuma ocorrência encontrada para este usuário" });
     return res.status(200).json(ocorrencias);
   } catch (err) {
-    return res
-      .status(500)
-      .json({
-        message: "Erro ao buscar ocorrências do usuário",
-        detail: err.message,
-      });
+    return res.status(500).json({
+      message: "Erro ao buscar ocorrências do usuário",
+      detail: err.message,
+    });
   }
 };
 
@@ -370,5 +385,5 @@ module.exports = {
   searchOcorrenciasFullText,
   getOcorrenciasByDate,
   getOcorrenciasByLocal,
-  getOcorrenciaBySetor
+  getOcorrenciaBySetor,
 };

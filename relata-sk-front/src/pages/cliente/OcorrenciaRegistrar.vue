@@ -12,6 +12,26 @@
               <q-input v-model="form.ocorrencia_descricao" type="textarea" label="Descrição" autogrow
                 :rules="[v => !!v || 'Informe a descrição']" @update:model-value="marcarEdit" />
             </div>
+            <div class="col-12">
+              <q-file v-model="files" multiple max-files="6" accept="image/*" label="Imagens da ocorrência (opcional)"
+                use-chips counter dense outlined>
+                <template #append>
+                  <q-icon name="photo_camera" />
+                </template>
+              </q-file>
+
+              <div class="row q-col-gutter-sm q-mt-sm">
+                <div v-for="(img, i) in previews" :key="i" class="col-6 col-sm-4 col-md-3">
+                  <q-card flat bordered>
+                    <q-img :src="img" ratio="1" />
+                    <q-card-actions align="right">
+                      <q-btn dense flat icon="delete" color="negative" @click="removerImagem(i)" />
+                    </q-card-actions>
+                  </q-card>
+                </div>
+              </div>
+            </div>
+
             <div class="col-12 col-sm-6">
               <q-select v-model="form.ocorrencia_prioridade" :options="optsPrioridade" label="Prioridade" dense
                 emit-value map-options @update:model-value="marcarEdit" />
@@ -179,7 +199,6 @@ const podeSalvar = computed(() =>
   !!String(form.local.local_rua || '').trim()
 )
 
-
 const formRef = ref(null)
 const estado = ref('idle')
 const loadingGeocode = ref(false)
@@ -187,6 +206,9 @@ const gettingLocation = ref(false)
 const municipioInput = ref('')
 const municipioOptions = ref([])
 const municipioLoading = computed(() => municipioStore.loading)
+
+const files = ref([])
+const previews = ref([])
 
 let map = null
 let marker = null
@@ -243,6 +265,17 @@ watch(step, async (val, oldVal) => {
   }
 })
 
+function removerImagem(i) {
+  const url = previews.value[i]
+  if (url) URL.revokeObjectURL(url)
+  previews.value.splice(i, 1)
+  files.value.splice(i, 1)
+}
+
+watch(files, (val) => {
+  previews.value.forEach((u) => URL.revokeObjectURL(u))
+  previews.value = val.map((f) => URL.createObjectURL(f))
+})
 
 function saveMapState() {
   if (!map) return
@@ -260,7 +293,6 @@ function restoreMarkerFromForm() {
     map.setView([lastView.lat, lastView.lng], lastView.zoom || 15)
   }
 }
-
 
 function setMarker(lat, lng, center = true) {
   if (!map) {
@@ -490,12 +522,23 @@ async function salvar() {
   }
 
   try {
-    await store.criarOcorrencia(payload)
-    Notify.create({ type: 'positive', message: 'Ocorrencia registrada com sucesso.' })
+    const fd = new FormData()
+    fd.append('ocorrencia_titulo', form.ocorrencia_titulo)
+    fd.append('ocorrencia_descricao', form.ocorrencia_descricao)
+    fd.append('ocorrencia_prioridade', form.ocorrencia_prioridade)
+    fd.append('ocorrencia_anonima', form.ocorrencia_anonima)
+    fd.append('local', JSON.stringify(form.local))
+
+    files.value.forEach((f) => fd.append('imagens[]', f))
+
+    await store.criarOcorrencia(fd, true) // segundo arg indica multipart
+
+    Notify.create({ type: 'positive', message: 'Ocorrência registrada com sucesso.' })
     router.push({ name: 'cliente.ocorrencias' })
   } catch {
-    Notify.create({ type: 'negative', message: 'Nao foi possivel registrar a ocorrencia.' })
+    Notify.create({ type: 'negative', message: 'Não foi possível registrar a ocorrência.' })
   }
+
 }
 </script>
 
@@ -526,5 +569,9 @@ async function salvar() {
     z-index: 5;
     background: white;
   }
+}
+
+.q-card-actions {
+  padding: 4px;
 }
 </style>

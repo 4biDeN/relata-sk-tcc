@@ -6,13 +6,17 @@ export function listOcorrencias(params = {}) {
   return api.get(`/ocorrencias/user/${userId}`, { params }).then((r) => r.data || [])
 }
 
-export function createOcorrenciaService(payload) {
-  return api.post('/ocorrencias', payload).then((r) => r.data)
+export function createOcorrenciaService(payload, isMultipart = false) {
+  const config = {}
+  if (isMultipart) {
+    config.headers = { 'Content-Type': 'multipart/form-data' }
+  }
+  return api.post('/ocorrencias', payload, config).then((r) => r.data)
 }
 
 export const ocorrenciaService = {
   async getById(id) {
     const { data } = await api.get(`/ocorrencias/${id}`)
     return data
-  }
+  },
 }

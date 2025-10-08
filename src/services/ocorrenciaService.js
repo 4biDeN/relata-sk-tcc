@@ -1,11 +1,13 @@
 const db = require("../configs/pg");
+const { toPublicUrl } = require("../storage");
 
 const createOcorrencia = async (data) => {
   const client = await db.getClient();
   try {
     await client.query("BEGIN");
 
-    const hasCoords = data.local?.local_latitude != null && data.local?.local_longitude != null;
+    const hasCoords =
+      data.local?.local_latitude != null && data.local?.local_longitude != null;
 
     const selLocalSql = `
       select local_id
@@ -14,14 +16,20 @@ const createOcorrencia = async (data) => {
         and local_bairro = $2
         and local_rua = $3
         and coalesce(local_complemento,'') = coalesce($4,'')
-        ${hasCoords ? "and ST_DWithin(location, ST_SetSRID(ST_MakePoint($5,$6),4326)::geography, 10)" : ""}
+        ${
+          hasCoords
+            ? "and ST_DWithin(location, ST_SetSRID(ST_MakePoint($5,$6),4326)::geography, 10)"
+            : ""
+        }
     `;
     const selLocalParams = [
       data.local?.local_municipio_id,
       data.local?.local_bairro,
       data.local?.local_rua,
       data.local?.local_complemento || null,
-      ...(hasCoords ? [data.local.local_longitude, data.local.local_latitude] : []),
+      ...(hasCoords
+        ? [data.local.local_longitude, data.local.local_latitude]
+        : []),
     ];
     let localRes = await client.query(selLocalSql, selLocalParams);
     let localId;
@@ -30,7 +38,9 @@ const createOcorrencia = async (data) => {
       localId = localRes.rows[0].local_id;
     } else {
       if (!hasCoords) {
-        throw new Error("Latitude e longitude são obrigatórias para criar um novo local.");
+        throw new Error(
+          "Latitude e longitude são obrigatórias para criar um novo local."
+        );
       }
       const insLocalSql = `
         insert into t_local (
@@ -82,6 +92,18 @@ const createOcorrencia = async (data) => {
     `;
     await client.query(histSql, [ocorrencia.ocorrencia_id, 1]);
 
+    if (Array.isArray(data.files) && data.files.length) {
+      const insImgSql = `
+        insert into t_ocorrencia_imagem (ocorrencia_id, ocorrencia_imagem_url)
+        values ($1, $2)
+        returning ocorrencia_imagem_id, ocorrencia_imagem_url
+      `;
+      for (const f of data.files) {
+        const url = toPublicUrl(f);
+        await client.query(insImgSql, [ocorrencia.ocorrencia_id, url]);
+      }
+    }
+
     await client.query("COMMIT");
     return ocorrencia;
   } catch (error) {
@@ -107,37 +129,73 @@ const getOcorrenciaById = async (ocorrencia_id) => {
       l.local_estado,
       l.local_bairro,
       l.local_rua,
-      l.local_complemento
+      l.local_complemento,
+      round(ST_Y(l.location::geometry)::numeric, 6) as local_latitude,
+      round(ST_X(l.location::geometry)::numeric, 6) as local_longitude,
+      coalesce(
+        json_agg(
+          json_build_object(
+            'ocorrencia_imagem_id', i.ocorrencia_imagem_id,
+            'ocorrencia_imagem_url', i.ocorrencia_imagem_url
+          )
+          order by i.ocorrencia_imagem_id
+        ) filter (where i.ocorrencia_imagem_id is not null),
+        '[]'::json
+      ) as imagens
     from t_ocorrencia o
     join t_ocorrencia_status os on o.ocorrencia_status = os.ocorrencia_status_id
     join t_usuario u on o.ocorrencia_user_id = u.user_id
     join t_local l on o.ocorrencia_local_id = l.local_id
     join t_municipio m on l.local_municipio_id = m.municipio_id
+    left join t_ocorrencia_imagem i on i.ocorrencia_id = o.ocorrencia_id
     where o.ocorrencia_id = $1
       and o.ocorrencia_excluida = false
-  `;
-  const result = await db.query(sql, [ocorrencia_id]);
-  return result.rows.length ? result.rows[0] : null;
-};
+    group by
+      o.ocorrencia_id, o.ocorrencia_titulo, o.ocorrencia_descricao, o.ocorrencia_data,
+      o.ocorrencia_protocolo, o.ocorrencia_anonima, os.ocorrencia_status_nome,
+      u.user_username, m.municipio_nome, l.local_estado, l.local_bairro,
+      l.local_rua, l.local_complemento, l.location
+  `
+  const result = await db.query(sql, [ocorrencia_id])
+  return result.rows.length ? result.rows[0] : null
+}
 
-const getOcorrenciaByUser = async (userd_id) => {
+const getOcorrenciaByUser = async (user_id) => {
   const sql = `
+    with imgs as (
+      select
+        i.ocorrencia_id,
+        count(*) as imagens_count,
+        min(i.ocorrencia_imagem_id) as first_img_id
+      from t_ocorrencia_imagem i
+      group by i.ocorrencia_id
+    ),
+    capa as (
+      select i.ocorrencia_id, i.ocorrencia_imagem_url as thumbnail_url
+      from t_ocorrencia_imagem i
+      join imgs x on x.first_img_id = i.ocorrencia_imagem_id
+    )
     select
       o.ocorrencia_id,
       o.ocorrencia_titulo,
       o.ocorrencia_data,
       o.ocorrencia_protocolo,
       o.ocorrencia_anonima,
-      os.ocorrencia_status_nome
+      os.ocorrencia_status_nome,
+      coalesce(x.imagens_count, 0) as imagens_count,
+      c.thumbnail_url
     from t_ocorrencia o
     join t_ocorrencia_status os on o.ocorrencia_status = os.ocorrencia_status_id
+    left join imgs x on x.ocorrencia_id = o.ocorrencia_id
+    left join capa c on c.ocorrencia_id = o.ocorrencia_id
     where o.ocorrencia_user_id = $1
       and o.ocorrencia_excluida = false
     order by o.ocorrencia_data desc
-  `;
-  const result = await db.query(sql, [userd_id]);
-  return result.rows.length ? result.rows : null;
-};
+  `
+  const result = await db.query(sql, [user_id])
+  return result.rows.length ? result.rows : null
+}
+
 
 const deleteOcorrencia = async (ocorrencia_id) => {
   const sql = `
@@ -460,7 +518,7 @@ const getOcorrenciaBySetor = async (ocorrencia_atribuida) => {
     join t_usuario u on o.ocorrencia_user_id = u.user_id
     join t_local l on o.ocorrencia_local_id = l.local_id
     join t_municipio m on l.local_municipio_id = m.municipio_id
-    joint t_user_typ us on o.ocorrencia_atribuida = us.user_type_id
+    join t_user_type us on o.ocorrencia_atribuida = us.user_type_id
     where o.ocorrencia_atribuida = $1
       and o.ocorrencia_excluida = false
   `;
@@ -480,5 +538,5 @@ module.exports = {
   searchOcorrenciasFullText,
   getOcorrenciasByDate,
   getOcorrenciasByLocal,
-  getOcorrenciaBySetor
+  getOcorrenciaBySetor,
 };

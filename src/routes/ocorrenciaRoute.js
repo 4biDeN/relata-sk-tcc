@@ -1,10 +1,12 @@
 const ocorrenciaController = require("../controllers/ocorrenciaController");
 const requireAuth = require("../auth/requireAuth");
+const { upload } = require("../storage");
 
 module.exports = (app) => {
   app.post(
     "/ocorrencias",
     requireAuth,
+    upload.array("imagens[]", 6),
     ocorrenciaController.createOcorrencia
     /*
     #swagger.tags = ['Ocorrências']

@@ -5,6 +5,7 @@ services:
     working_dir: /usr/src/app
     volumes:
       - .:/usr/src/app
+      - app_uploads:/usr/src/app/uploads
     ports:
       - "3000:3000"
     env_file:
@@ -45,7 +46,7 @@ services:
       context: ./relata-sk-front
       dockerfile: Dockerfile
       args:
-        VITE_API_BASE: "http://api_app:3001/api"
+        VITE_API_BASE: "http://api_app:3000"
     container_name: quasar_web
     depends_on:
       - app
@@ -56,6 +57,7 @@ services:
 volumes:
   db_data:
   pgadmin_data:
+  app_uploads:
 
 networks:
   default:

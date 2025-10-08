@@ -18,11 +18,11 @@ export const useOcorrenciaStore = defineStore('ocorrencia', {
         this.loading = false
       }
     },
-    async criarOcorrencia(data) {
+    async criarOcorrencia(data, isMultipart = false) {
       this.creating = true
       this.error = null
       try {
-        const res = await createOcorrenciaService(data)
+        const res = await createOcorrenciaService(data, isMultipart)
         this.ultimaCriada = res
         return res
       } catch (e) {
@@ -33,6 +33,4 @@ export const useOcorrenciaStore = defineStore('ocorrencia', {
       }
     },
   },
-  
 })
-
