@@ -47,11 +47,13 @@
                         <div class="col-12 col-md-6">
                             <div class="text-bold text-grey-7 q-mb-xs">Resumo</div>
                             <div class="q-mb-xs"><span class="text-grey-7">Data:</span> {{ dataFmt }}</div>
-                            <div class="q-mb-xs"><span class="text-grey-7">Autor:</span> {{ item.user_username }}</div>
+                            <div class="q-mb-xs" v-if="podeVerAutor">
+                                <span class="text-grey-7">Autor:</span> {{ item.user_username }}
+                            </div>
                             <div class="q-mb-xs">
                                 <span class="text-grey-7">Local:</span>
                                 {{ item.local_rua }}, {{ item.local_bairro }} – {{ item.municipio_nome }}/{{
-                                item.local_estado }}
+                                    item.local_estado }}
                                 <span v-if="item.local_complemento"> ({{ item.local_complemento }})</span>
                             </div>
                         </div>
@@ -63,6 +65,7 @@
                     </div>
                 </q-card-section>
 
+                <!-- MAPA -->
                 <q-separator />
                 <q-card-section>
                     <div class="row items-center q-col-gutter-sm q-mb-sm">
@@ -80,11 +83,11 @@
 
                     <div v-if="hasCoords" class="leaflet-wrap">
                         <div ref="mapEl" class="leaflet-map"></div>
+                        <q-resize-observer @resize="onMapResize" />
                     </div>
                     <div v-else class="text-grey-6">Nenhuma coordenada informada.</div>
                 </q-card-section>
 
-                <q-separator />
                 <q-card-section>
                     <div class="row items-center q-col-gutter-sm q-mb-sm">
                         <div class="col">
@@ -106,20 +109,21 @@
                     <div v-else class="text-grey-6">Nenhuma imagem anexada.</div>
                 </q-card-section>
 
-                <q-dialog v-model="lightbox.open" persistent maximized transition-show="fade" transition-hide="fade">
+                <q-dialog v-model="lightbox.open" maximized transition-show="fade" transition-hide="fade">
                     <q-card class="bg-black">
                         <q-bar class="bg-black text-white">
                             <div class="text-subtitle2">Imagens da ocorrência</div>
                             <q-space />
                             <q-btn flat dense round icon="close" v-close-popup />
                         </q-bar>
+
                         <q-card-section class="q-pa-none">
                             <q-carousel v-model="lightbox.index" swipeable animated control-color="white" arrows
-                                infinite class="bg-black">
-                                <q-carousel-slide v-for="(img, i) in item.imagens" :key="i" :name="i">
-                                    <div class="flex flex-center" style="height: calc(100vh - 64px);">
-                                        <q-img :src="img.ocorrencia_imagem_url"
-                                            style="max-width: 95vw; max-height: 85vh;" fit="contain" />
+                                infinite class="bg-black" :height="carouselHeight">
+                                <q-carousel-slide v-for="(img, i) in item.imagens" :key="i" :name="i"
+                                    class="lightbox-slide">
+                                    <div class="lightbox-img-wrap">
+                                        <img :src="img.ocorrencia_imagem_url" class="lightbox-img" alt="" />
                                     </div>
                                 </q-carousel-slide>
                             </q-carousel>
@@ -132,14 +136,15 @@
 </template>
 
 <script setup>
-import { onMounted, onBeforeUnmount, computed, watch, reactive, ref } from 'vue'
+import { onMounted, onBeforeUnmount, computed, watch, reactive, ref, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
-import { copyToClipboard, Notify } from 'quasar'
+import { copyToClipboard, Notify, useQuasar } from 'quasar'
 import { useOcorrenciaDetalheStore } from 'src/stores/ocorrenciaDetalhe'
 
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
+const $q = useQuasar()
 const route = useRoute()
 const store = useOcorrenciaDetalheStore()
 
@@ -190,6 +195,11 @@ const hasCoords = computed(() => {
     return Number.isFinite(lat) && Number.isFinite(lng)
 })
 
+function onMapResize() {
+    if (!map) return
+    map.invalidateSize()
+}
+
 function initMap() {
     if (!mapEl.value || !hasCoords.value) return
     const lat = Number(item.value.local_latitude)
@@ -202,6 +212,7 @@ function initMap() {
 
     marker = L.marker([lat, lng]).addTo(map)
 
+    nextTick(() => map?.invalidateSize())
     setTimeout(() => map?.invalidateSize(), 150)
 }
 
@@ -217,9 +228,24 @@ function destroyMap() {
     }
 }
 
-watch(hasCoords, (ok) => {
-    destroyMap()
-    if (ok) initMap()
+watch(hasCoords, async (ok) => {
+    if (!ok) { destroyMap(); return }
+    await nextTick()
+    if (!map) initMap()
+    else {
+        const lat = Number(item.value.local_latitude)
+        const lng = Number(item.value.local_longitude)
+        map.setView([lat, lng], Math.max(map.getZoom(), 16))
+        nextTick(() => map?.invalidateSize())
+    }
+})
+
+watch(loading, async (isLoading) => {
+    if (isLoading) return
+    if (!hasCoords.value) return
+    await nextTick()
+    if (!map) initMap()
+    else map.invalidateSize()
 })
 
 onMounted(() => { if (hasCoords.value) initMap() })
@@ -247,6 +273,21 @@ async function copiarProtocolo() {
         Notify.create({ type: 'warning', message: 'Não foi possível copiar' })
     }
 }
+const currentUserId = Number(localStorage.getItem('user_id')) || null
+
+const podeVerAutor = computed(() => {
+    const it = item.value
+    if (!it) return false
+    if (it.ocorrencia_anonima) return false
+    if (!Number.isInteger(currentUserId)) return false
+    return Number(it.autor_id) === currentUserId
+})
+
+const carouselHeight = computed(() => {
+    const header = $q.screen.lt.sm ? 48 : 56
+    return Math.max($q.screen.height - header, 300) + 'px'
+})
+
 </script>
 
 <style scoped>
@@ -262,5 +303,22 @@ async function copiarProtocolo() {
 .leaflet-map {
     width: 100%;
     height: 320px;
+}
+
+.lightbox-slide {
+    background: #000;
+}
+
+.lightbox-img-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+}
+
+.lightbox-img {
+    max-width: 100vw;
+    max-height: calc(100vh - 64px);
+    object-fit: contain;
 }
 </style>

@@ -101,12 +101,10 @@ const getOcorrenciaByUser = async (req, res) => {
     //   return res.status(404).json({ message: "Nenhuma ocorrência encontrada para este usuário" })
     // return res.status(200).json(ocorrencias)
   } catch (err) {
-    return res
-      .status(500)
-      .json({
-        message: "Erro ao buscar ocorrências do usuário",
-        detail: err.message,
-      });
+    return res.status(500).json({
+      message: "Erro ao buscar ocorrências do usuário",
+      detail: err.message,
+    });
   }
 };
 
@@ -373,6 +371,69 @@ const getOcorrenciaBySetor = async (req, res) => {
   }
 };
 
+const getOcorrenciasProximas = async (req, res) => {
+  try {
+    const lat = Number(req.query.lat);
+    const lng = Number(req.query.lng);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      return res
+        .status(400)
+        .json({
+          message:
+            "Parâmetros lat e lng são obrigatórios e devem ser numéricos",
+        });
+    }
+
+    const radius_km =
+      req.query.radius_km != null ? Number(req.query.radius_km) : 3;
+    const status_id =
+      req.query.status != null ? Number(req.query.status) : null;
+    const prioridade_id =
+      req.query.prioridade != null ? Number(req.query.prioridade) : null;
+    const com_imagens =
+      String(req.query.com_imagens || "").toLowerCase() === "1" ||
+      String(req.query.com_imagens || "").toLowerCase() === "true";
+
+    const limit = req.query.limit != null ? Number(req.query.limit) : 20;
+    const offset = req.query.offset != null ? Number(req.query.offset) : 0;
+
+    if (radius_km <= 0)
+      return res
+        .status(400)
+        .json({ message: "radius_km deve ser maior que zero" });
+    if (limit <= 0 || limit > 100)
+      return res
+        .status(400)
+        .json({ message: "limit deve estar entre 1 e 100" });
+    if (offset < 0)
+      return res.status(400).json({ message: "offset não pode ser negativo" });
+    if (status_id !== null && !Number.isInteger(status_id))
+      return res.status(400).json({ message: "status inválido" });
+    if (prioridade_id !== null && !Number.isInteger(prioridade_id))
+      return res.status(400).json({ message: "prioridade inválida" });
+
+    const data = await ocorrenciaService.getOcorrenciasProximas({
+      lat,
+      lng,
+      radius_km,
+      status_id,
+      prioridade_id,
+      com_imagens,
+      limit,
+      offset,
+    });
+
+    return res.status(200).json(Array.isArray(data) ? data : []);
+  } catch (err) {
+    return res
+      .status(500)
+      .json({
+        message: "Erro ao buscar ocorrências próximas",
+        detail: err.message,
+      });
+  }
+};
+
 module.exports = {
   createOcorrencia,
   getOcorrenciaById,
@@ -386,4 +447,5 @@ module.exports = {
   getOcorrenciasByDate,
   getOcorrenciasByLocal,
   getOcorrenciaBySetor,
+  getOcorrenciasProximas,
 };

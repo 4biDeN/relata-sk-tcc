@@ -848,6 +848,181 @@
         }
       }
     },
+    "/ocorrencias/nearby": {
+      "get": {
+        "tags": [
+          "Ocorrências"
+        ],
+        "summary": "Listar ocorrências próximas a um ponto",
+        "description": "Retorna ocorrências dentro de um raio (km) a partir de lat/lng, com filtros opcionais.",
+        "parameters": [
+          {
+            "name": "slice(7",
+            "in": "header",
+            "type": "string"
+          },
+          {
+            "name": "lat",
+            "in": "query",
+            "required": true,
+            "type": "number",
+            "example": -26.92651,
+            "description": "Latitude"
+          },
+          {
+            "name": "lng",
+            "in": "query",
+            "required": true,
+            "type": "number",
+            "example": -53.007079,
+            "description": "Longitude"
+          },
+          {
+            "name": "radius_km",
+            "in": "query",
+            "required": false,
+            "type": "number",
+            "example": 3,
+            "description": "Raio em km (0.1 a 50)"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "example": 1,
+            "description": "Filtrar por status_id"
+          },
+          {
+            "name": "prioridade",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "example": 2,
+            "description": "Filtrar por prioridade_id"
+          },
+          {
+            "name": "com_imagens",
+            "in": "query",
+            "required": false,
+            "type": "boolean",
+            "example": true,
+            "description": "Apenas ocorrências com imagens"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "example": 20
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "example": 0
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de ocorrências próximas",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "ocorrencia_id": {
+                    "type": "number",
+                    "example": 12
+                  },
+                  "ocorrencia_titulo": {
+                    "type": "string",
+                    "example": "Buracos"
+                  },
+                  "ocorrencia_descricao": {
+                    "type": "string",
+                    "example": "…"
+                  },
+                  "ocorrencia_data": {
+                    "type": "string",
+                    "example": "2025-10-07T12:34:56.000Z"
+                  },
+                  "ocorrencia_protocolo": {
+                    "type": "string",
+                    "example": "PRT-…"
+                  },
+                  "ocorrencia_anonima": {
+                    "type": "boolean",
+                    "example": true
+                  },
+                  "ocorrencia_status_nome": {
+                    "type": "string",
+                    "example": "Aberto"
+                  },
+                  "ocorrencia_prioridade_nome": {
+                    "type": "string",
+                    "example": "Normal"
+                  },
+                  "municipio_nome": {
+                    "type": "string",
+                    "example": "Saudades"
+                  },
+                  "local_estado": {
+                    "type": "string",
+                    "example": "SC"
+                  },
+                  "local_bairro": {
+                    "type": "string",
+                    "example": "Centro"
+                  },
+                  "local_rua": {
+                    "type": "string",
+                    "example": "Av. Brasil"
+                  },
+                  "local_complemento": {
+                    "type": "string",
+                    "example": "Em frente ao posto"
+                  },
+                  "local_latitude": {
+                    "type": "number",
+                    "example": -26.92651
+                  },
+                  "local_longitude": {
+                    "type": "number",
+                    "example": -53.007079
+                  },
+                  "imagens_count": {
+                    "type": "number",
+                    "example": 2
+                  },
+                  "thumbnail_url": {
+                    "type": "string",
+                    "example": "http://localhost:3000/uploads/....jpg"
+                  },
+                  "distance_km": {
+                    "type": "number",
+                    "example": 0.184
+                  }
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "400": {
+            "description": "Parâmetros inválidos"
+          },
+          "401": {
+            "description": "Não autorizado"
+          },
+          "500": {
+            "description": "Erro interno"
+          }
+        }
+      }
+    },
     "/ocorrencias/search": {
       "get": {
         "tags": [

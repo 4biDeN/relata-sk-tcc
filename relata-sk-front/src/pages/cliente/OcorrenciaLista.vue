@@ -1,7 +1,8 @@
 <template>
   <q-page padding>
     <q-table :rows="filteredRows" :columns="columns" row-key="ocorrencia_id" :loading="loading"
-      :pagination="{ rowsPerPage: 10 }" :row-class="rowClass" @row-click="irDetalhe" class="cursor-pointer">
+      :pagination="{ rowsPerPage: 10 }" :rows-per-page-options="[10, 20, 50, 100]" :row-class="rowClass"
+      @row-click="irDetalhe" class="cursor-pointer">
       <template #top>
         <div class="row items-center q-gutter-sm full-width">
           <q-input v-model="busca" dense placeholder="Buscar por título ou protocolo" @keyup.enter="carregar"
@@ -121,21 +122,21 @@ const ptBR = {
   firstDayOfWeek: 1
 }
 
-function onPickFrom () { fromProxy.value?.hide() }
-function onPickTo ()   { toProxy.value?.hide() }
+function onPickFrom() { fromProxy.value?.hide() }
+function onPickTo() { toProxy.value?.hide() }
 
 function toBR(ymd) {
   if (!ymd) return ''
   const [Y, M, D] = ymd.split('-')
   if (!Y || !M || !D) return ''
-  return `${D.padStart(2,'0')}/${M.padStart(2,'0')}/${Y}`
+  return `${D.padStart(2, '0')}/${M.padStart(2, '0')}/${Y}`
 }
 function toYMD(br) {
   if (!br) return ''
   const m = br.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
   if (!m) return ''
-  const D = m[1].padStart(2,'0')
-  const M = m[2].padStart(2,'0')
+  const D = m[1].padStart(2, '0')
+  const M = m[2].padStart(2, '0')
   const Y = m[3]
   return `${Y}-${M}-${D}`
 }

@@ -77,6 +77,51 @@ module.exports = (app) => {
   );
 
   app.get(
+    "/ocorrencias/nearby",
+    requireAuth,
+    ocorrenciaController.getOcorrenciasProximas
+    /*
+    #swagger.tags = ['Ocorrências']
+    #swagger.summary = 'Listar ocorrências próximas a um ponto'
+    #swagger.description = 'Retorna ocorrências dentro de um raio (km) a partir de lat/lng, com filtros opcionais.'
+    #swagger.parameters['lat'] = { in: 'query', required: true, type: 'number', example: -26.92651, description: 'Latitude' }
+    #swagger.parameters['lng'] = { in: 'query', required: true, type: 'number', example: -53.007079, description: 'Longitude' }
+    #swagger.parameters['radius_km'] = { in: 'query', required: false, type: 'number', example: 3, description: 'Raio em km (0.1 a 50)' }
+    #swagger.parameters['status'] = { in: 'query', required: false, type: 'integer', example: 1, description: 'Filtrar por status_id' }
+    #swagger.parameters['prioridade'] = { in: 'query', required: false, type: 'integer', example: 2, description: 'Filtrar por prioridade_id' }
+    #swagger.parameters['com_imagens'] = { in: 'query', required: false, type: 'boolean', example: true, description: 'Apenas ocorrências com imagens' }
+    #swagger.parameters['limit'] = { in: 'query', required: false, type: 'integer', example: 20 }
+    #swagger.parameters['offset'] = { in: 'query', required: false, type: 'integer', example: 0 }
+    #swagger.responses[200] = {
+      description: 'Lista de ocorrências próximas',
+      schema: [{
+        ocorrencia_id: 12,
+        ocorrencia_titulo: "Buracos",
+        ocorrencia_descricao: "…",
+        ocorrencia_data: "2025-10-07T12:34:56.000Z",
+        ocorrencia_protocolo: "PRT-…",
+        ocorrencia_anonima: true,
+        ocorrencia_status_nome: "Aberto",
+        ocorrencia_prioridade_nome: "Normal",
+        municipio_nome: "Saudades",
+        local_estado: "SC",
+        local_bairro: "Centro",
+        local_rua: "Av. Brasil",
+        local_complemento: "Em frente ao posto",
+        local_latitude: -26.92651,
+        local_longitude: -53.007079,
+        imagens_count: 2,
+        thumbnail_url: "http://localhost:3000/uploads/....jpg",
+        distance_km: 0.184
+      }]
+    }
+    #swagger.responses[400] = { description: 'Parâmetros inválidos' }
+    #swagger.responses[401] = { description: 'Não autorizado' }
+    #swagger.responses[500] = { description: 'Erro interno' }
+    */
+  );
+
+  app.get(
     "/ocorrencias/search",
     requireAuth,
     ocorrenciaController.searchOcorrenciaByFieldValue

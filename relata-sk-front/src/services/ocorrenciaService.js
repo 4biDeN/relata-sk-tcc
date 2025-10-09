@@ -20,3 +20,8 @@ export const ocorrenciaService = {
     return data
   },
 }
+
+export async function getOcorrenciasProximas(params) {
+  const { data } = await api.get('/ocorrencias/nearby', { params })
+  return Array.isArray(data) ? data : []
+}

@@ -118,6 +118,7 @@ const getOcorrenciaById = async (ocorrencia_id) => {
   const sql = `
     select 
       o.ocorrencia_id,
+      o.ocorrencia_user_id,
       o.ocorrencia_titulo,
       o.ocorrencia_descricao,
       o.ocorrencia_data,
@@ -151,14 +152,14 @@ const getOcorrenciaById = async (ocorrencia_id) => {
     where o.ocorrencia_id = $1
       and o.ocorrencia_excluida = false
     group by
-      o.ocorrencia_id, o.ocorrencia_titulo, o.ocorrencia_descricao, o.ocorrencia_data,
+      o.ocorrencia_id, o.ocorrencia_user_id, o.ocorrencia_titulo, o.ocorrencia_descricao, o.ocorrencia_data,
       o.ocorrencia_protocolo, o.ocorrencia_anonima, os.ocorrencia_status_nome,
       u.user_username, m.municipio_nome, l.local_estado, l.local_bairro,
       l.local_rua, l.local_complemento, l.location
-  `
-  const result = await db.query(sql, [ocorrencia_id])
-  return result.rows.length ? result.rows[0] : null
-}
+  `;
+  const result = await db.query(sql, [ocorrencia_id]);
+  return result.rows.length ? result.rows[0] : null;
+};
 
 const getOcorrenciaByUser = async (user_id) => {
   const sql = `
@@ -191,11 +192,10 @@ const getOcorrenciaByUser = async (user_id) => {
     where o.ocorrencia_user_id = $1
       and o.ocorrencia_excluida = false
     order by o.ocorrencia_data desc
-  `
-  const result = await db.query(sql, [user_id])
-  return result.rows.length ? result.rows : null
-}
-
+  `;
+  const result = await db.query(sql, [user_id]);
+  return result.rows.length ? result.rows : null;
+};
 
 const deleteOcorrencia = async (ocorrencia_id) => {
   const sql = `
@@ -526,6 +526,92 @@ const getOcorrenciaBySetor = async (ocorrencia_atribuida) => {
   return result.rows.length ? result.rows[0] : null;
 };
 
+const getOcorrenciasProximas = async ({
+  lat,
+  lng,
+  radius_km = 3,
+  status_id = null,
+  prioridade_id = null,
+  com_imagens = false,
+  limit = 20,
+  offset = 0,
+}) => {
+  // saneamento básico
+  const R = Math.max(0.1, Math.min(Number(radius_km) || 3, 50));
+  const LIMIT = Math.max(1, Math.min(Number(limit) || 20, 100));
+  const OFFSET = Math.max(0, Number(offset) || 0);
+
+  const params = [lng, lat, R * 1000];
+  let i = params.length;
+
+  const where = [
+    "o.ocorrencia_excluida = false",
+    "ST_DWithin(l.location, ST_SetSRID(ST_MakePoint($1,$2),4326)::geography, $3)",
+  ];
+
+  if (status_id != null) {
+    params.push(Number(status_id));
+    i++;
+    where.push(`o.ocorrencia_status = $${i}`);
+  }
+
+  if (prioridade_id != null) {
+    params.push(Number(prioridade_id));
+    i++;
+    where.push(`o.ocorrencia_prioridade = $${i}`);
+  }
+
+  const imgsCTE = `
+    with imgs as (
+      select
+        i.ocorrencia_id,
+        count(*) as imagens_count,
+        min(i.ocorrencia_imagem_id) as first_img_id
+      from t_ocorrencia_imagem i
+      group by i.ocorrencia_id
+    ),
+    capa as (
+      select i.ocorrencia_id, i.ocorrencia_imagem_url as thumbnail_url
+      from t_ocorrencia_imagem i
+      join imgs x on x.first_img_id = i.ocorrencia_imagem_id
+    )
+  `;
+
+  const sql = `
+    ${imgsCTE}
+    select
+      o.ocorrencia_id,
+      o.ocorrencia_titulo,
+      o.ocorrencia_descricao,
+      o.ocorrencia_data,
+      o.ocorrencia_protocolo,
+      o.ocorrencia_anonima,
+      s.ocorrencia_status_nome,
+      p.ocorrencia_prioridade_nome,
+      m.municipio_nome,
+      l.local_estado, l.local_bairro, l.local_rua, l.local_complemento,
+      round(ST_Y(l.location::geometry)::numeric, 6) as local_latitude,
+      round(ST_X(l.location::geometry)::numeric, 6) as local_longitude,
+      coalesce(x.imagens_count, 0) as imagens_count,
+      c.thumbnail_url,
+      round( (ST_DistanceSphere( ST_SetSRID(ST_MakePoint($1,$2),4326), l.location::geometry ) / 1000.0)::numeric, 3 ) as distance_km
+    from t_ocorrencia o
+    join t_local l on o.ocorrencia_local_id = l.local_id
+    join t_municipio m on l.local_municipio_id = m.municipio_id
+    left join t_ocorrencia_status s on o.ocorrencia_status = s.ocorrencia_status_id
+    left join t_ocorrencia_prioridade p on o.ocorrencia_prioridade = p.ocorrencia_prioridade_id
+    left join imgs x on x.ocorrencia_id = o.ocorrencia_id
+    left join capa c on c.ocorrencia_id = o.ocorrencia_id
+    where ${where.join(" and ")}
+    ${com_imagens ? "and coalesce(x.imagens_count,0) > 0" : ""}
+    order by distance_km asc, o.ocorrencia_data desc
+    limit ${LIMIT} offset ${OFFSET}
+  `;
+
+  const { rows } = await db.query(sql, params);
+  return rows;
+};
+
 module.exports = {
   createOcorrencia,
   getOcorrenciaById,
@@ -539,4 +625,5 @@ module.exports = {
   getOcorrenciasByDate,
   getOcorrenciasByLocal,
   getOcorrenciaBySetor,
+  getOcorrenciasProximas,
 };
