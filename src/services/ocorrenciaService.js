@@ -217,6 +217,7 @@ const updateOcorrencia = async (ocorrencia_id, data) => {
       "ocorrencia_status",
       "ocorrencia_prioridade",
       "ocorrencia_anonima",
+      "ocorrencia_atribuida"
     ];
 
     const setClause = [];
@@ -612,6 +613,114 @@ const getOcorrenciasProximas = async ({
   return rows;
 };
 
+const listOcorrenciasRoleAware = async ({
+  q,
+  status_id,
+  prioridade_id,
+  com_imagens,
+  orderDir = "desc",
+  limit = 20,
+  offset = 0,
+  role,
+  userId,
+  nearbyLat = null,
+  nearbyLng = null,
+  nearbyRadiusM = null,
+}) => {
+  const params = [];
+  let i = 1;
+  const where = ["o.ocorrencia_excluida = false"];
+
+  if (q && q.trim()) {
+    where.push(
+      `(o.ocorrencia_titulo ILIKE $${i} OR o.ocorrencia_protocolo ILIKE $${
+        i + 1
+      })`
+    );
+    params.push(`%${q}%`, `%${q}%`);
+    i += 2;
+  }
+  if (Number.isInteger(status_id)) {
+    where.push(`o.ocorrencia_status = $${i}`);
+    params.push(status_id);
+    i++;
+  }
+  if (Number.isInteger(prioridade_id)) {
+    where.push(`o.ocorrencia_prioridade = $${i}`);
+    params.push(prioridade_id);
+    i++;
+  }
+
+  if (role === 2) {
+  } else if (role === 3 || role === 4) {
+    where.push(`o.ocorrencia_atribuida = $${i}`);
+    params.push(role);
+    i++;
+  } else {
+    const conds = [`o.ocorrencia_user_id = $${i}`];
+    params.push(userId);
+    i++;
+    if (
+      nearbyLat !== null &&
+      nearbyLng !== null &&
+      nearbyRadiusM !== null &&
+      Number.isFinite(Number(nearbyLat)) &&
+      Number.isFinite(Number(nearbyLng)) &&
+      Number.isFinite(Number(nearbyRadiusM)) &&
+      Number(nearbyRadiusM) > 0
+    ) {
+      const latParam = `$${i}`;
+      const lngParam = `$${i + 1}`;
+      const radParam = `$${i + 2}`;
+      conds.push(
+        `ST_DWithin(l.location, ST_SetSRID(ST_MakePoint(${lngParam}, ${latParam}),4326)::geography, ${radParam})`
+      );
+      params.push(Number(nearbyLat), Number(nearbyLng), Number(nearbyRadiusM));
+      i += 3;
+    }
+    where.push(`(${conds.join(" OR ")})`);
+  }
+
+  const order = orderDir === "asc" ? "asc" : "desc";
+  const having = com_imagens
+    ? "HAVING COUNT(img.ocorrencia_imagem_id) > 0"
+    : "";
+
+  const sql = `
+    SELECT
+      COUNT(*) OVER() AS total_count,
+      o.ocorrencia_id,
+      o.ocorrencia_protocolo,
+      o.ocorrencia_titulo,
+      o.ocorrencia_descricao,
+      o.ocorrencia_data,
+      o.ocorrencia_status,
+      o.ocorrencia_prioridade,
+      o.ocorrencia_atribuida,
+      m.municipio_nome,
+      l.local_estado,
+      l.local_bairro,
+      l.local_rua,
+      COALESCE(COUNT(img.ocorrencia_imagem_id), 0) AS imagens_count,
+      MIN(img.ocorrencia_imagem_url) FILTER (WHERE img.ocorrencia_imagem_url IS NOT NULL) AS thumbnail_url
+    FROM t_ocorrencia o
+    JOIN t_local l ON o.ocorrencia_local_id = l.local_id
+    JOIN t_municipio m ON l.local_municipio_id = m.municipio_id
+    LEFT JOIN t_ocorrencia_imagem img ON img.ocorrencia_id = o.ocorrencia_id
+    WHERE ${where.join(" AND ")}
+    GROUP BY
+      o.ocorrencia_id, o.ocorrencia_protocolo, o.ocorrencia_titulo, o.ocorrencia_descricao, o.ocorrencia_data,
+      o.ocorrencia_status, o.ocorrencia_prioridade, o.ocorrencia_atribuida, m.municipio_nome, l.local_estado, l.local_bairro, l.local_rua
+    ${having}
+    ORDER BY o.ocorrencia_data ${order}
+    LIMIT $${i} OFFSET $${i + 1}
+  `;
+  params.push(limit, offset);
+  
+  const result = await db.query(sql, params);
+  return result.rows;
+};
+
 module.exports = {
   createOcorrencia,
   getOcorrenciaById,
@@ -626,4 +735,5 @@ module.exports = {
   getOcorrenciasByLocal,
   getOcorrenciaBySetor,
   getOcorrenciasProximas,
+  listOcorrenciasRoleAware,
 };

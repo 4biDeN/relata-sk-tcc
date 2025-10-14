@@ -64,9 +64,8 @@
 
       <template #body-cell-ocorrencia_status_nome="props">
         <q-td :props="props">
-          <q-badge :color="statusStyle(props.row.ocorrencia_status_nome).color"
-            :text-color="statusStyle(props.row.ocorrencia_status_nome).text" class="q-px-sm q-py-xs">
-            {{ props.row.ocorrencia_status_nome }}
+          <q-badge :color="props.row.status_color" text-color="white" class="q-px-sm q-py-xs">
+            {{ props.row.status_label }}
           </q-badge>
         </q-td>
       </template>
@@ -177,26 +176,20 @@ function norm(s) {
     .trim()
 }
 
-const STATUS_STYLES = {
-  'aberto': { color: 'orange-7', text: 'white', row: 'row-aberto' },
-  'em analise': { color: 'indigo-7', text: 'white', row: 'row-analise' },
-  'em andamento': { color: 'info', text: 'white', row: 'row-andamento' },
-  'resolvido': { color: 'positive', text: 'white', row: 'row-resolvido' },
-  'fechado': { color: 'green-8', text: 'white', row: 'row-fechado' }
+const STATUS_META = {
+  1: { label: 'Aberto', color: 'orange-7', row: 'row-aberto' },
+  2: { label: 'Em análise', color: 'indigo-7', row: 'row-analise' },
+  3: { label: 'Em andamento', color: 'info', row: 'row-andamento' },
+  4: { label: 'Resolvido', color: 'positive', row: 'row-resolvido' },
+  5: { label: 'Fechado', color: 'green-8', row: 'row-fechado' }
 }
 
-const statusOptions = Object.keys(STATUS_STYLES).map(k => ({
-  label: k.replace(/\b\w/g, c => c.toUpperCase()),
-  value: k
+const statusOptions = Object.entries(STATUS_META).map(([id, m]) => ({
+  label: m.label, value: Number(id)
 }))
 
-function statusStyle(name) {
-  const key = norm(name)
-  return STATUS_STYLES[key] || { color: 'grey-6', text: 'white', row: 'row-default' }
-}
-
 function rowClass(row) {
-  return statusStyle(row.ocorrencia_status_nome).row
+  return row.status_row || 'row-default'
 }
 
 const columns = [
@@ -208,15 +201,25 @@ const columns = [
 ]
 
 const rawRows = computed(() => store.itens)
-const rows = computed(() => rawRows.value.map(r => ({
-  ...r,
-  ocorrencia_data_fmt: formatDateISOToBR(r.ocorrencia_data),
-  _status_key: norm(r.ocorrencia_status_nome)
-})))
+
+const rows = computed(() => rawRows.value.map(r => {
+  const status_id = Number(r.ocorrencia_status_id ?? r.ocorrencia_status ?? 0)
+  const meta = STATUS_META[status_id] || { label: '—', color: 'grey-6', row: 'row-default' }
+  return {
+    ...r,
+    imagens_count: Number(r.imagens_count ?? 0),
+    ocorrencia_data_fmt: formatDateISOToBR(r.ocorrencia_data),
+    status_id,
+    status_label: meta.label,
+    status_color: meta.color,
+    status_row: meta.row,
+  }
+}))
+
 
 const filteredRows = computed(() => {
   const q = norm(busca.value)
-  const s = statusSel.value ? norm(statusSel.value) : null
+  const s = statusSel.value != null ? Number(statusSel.value) : null
   const dFrom = from.value ? new Date(from.value + 'T00:00:00') : null
   const dTo = to.value ? new Date(to.value + 'T23:59:59') : null
   const withImgs = !!onlyWithImages.value
@@ -228,7 +231,7 @@ const filteredRows = computed(() => {
       const inProto = norm(r.ocorrencia_protocolo).includes(q)
       if (!inTitle && !inProto) return false
     }
-    if (s && r._status_key !== s) return false
+    if (s != null && r.status_id !== s) return false
 
     if (dFrom || dTo) {
       const d = new Date(r.ocorrencia_data)

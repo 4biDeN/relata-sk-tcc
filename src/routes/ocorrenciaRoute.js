@@ -76,6 +76,11 @@ module.exports = (app) => {
 */
   );
 
+app.get(
+    "/ocorrencias",
+    requireAuth,
+    ocorrenciaController.listOcorrencias)
+
   app.get(
     "/ocorrencias/nearby",
     requireAuth,

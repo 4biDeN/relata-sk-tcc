@@ -2,17 +2,26 @@ import { defineStore } from 'pinia'
 import { listOcorrencias, createOcorrenciaService } from 'src/services/ocorrenciaService'
 
 export const useOcorrenciaStore = defineStore('ocorrencia', {
-  state: () => ({ itens: [], loading: false, error: null }),
+  state: () => ({
+    itens: [],
+    total: 0,
+    loading: false,
+    creating: false,
+    error: null,
+    ultimaCriada: null,
+  }),
   actions: {
     async fetchLista(params = {}) {
       this.loading = true
       this.error = null
       try {
-        const data = await listOcorrencias(params)
+        const { data, total } = await listOcorrencias(params)
         this.itens = Array.isArray(data) ? data : []
+        this.total = Number(total) || 0
       } catch (e) {
         this.error = e
         this.itens = []
+        this.total = 0
         throw e
       } finally {
         this.loading = false

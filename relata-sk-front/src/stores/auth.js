@@ -29,17 +29,17 @@ export const useAuthStore = defineStore('auth', {
 
     return {
       user: null,
-      token
+      token,
     }
   },
   getters: {
-    isAuth: state => !!state.token
+    isAuth: (state) => !!state.token,
   },
   actions: {
     async login({ documento, password }) {
       const { data } = await api.post('/login', {
         user_documento: documento,
-        user_password: password
+        user_password: password,
       })
 
       this.user = data?.user || null
@@ -53,6 +53,12 @@ export const useAuthStore = defineStore('auth', {
       } else {
         persistToken(null)
       }
+
+      localStorage.setItem('token', data.token)
+      localStorage.setItem('user_id', String(data.user.id))
+      localStorage.setItem('user_tipo', String(data.user.tipo))
+
+      this.user = { id: data.user.id, documento: data.user.documento, tipo: data.user.tipo }
     },
     async createUser(payload) {
       const { data } = await api.post('/user', payload)
@@ -66,6 +72,6 @@ export const useAuthStore = defineStore('auth', {
       this.token = null
       persistToken(null)
       persistUser(null)
-    }
-  }
+    },
+  },
 })

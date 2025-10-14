@@ -846,6 +846,80 @@
             }
           }
         }
+      },
+      "get": {
+        "description": "",
+        "parameters": [
+          {
+            "name": "slice(7",
+            "in": "header",
+            "type": "string"
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "type": "string"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "type": "string"
+          },
+          {
+            "name": "prioridade",
+            "in": "query",
+            "type": "string"
+          },
+          {
+            "name": "withImages",
+            "in": "query",
+            "type": "string"
+          },
+          {
+            "name": "orderDir",
+            "in": "query",
+            "type": "string"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "type": "string"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "type": "string"
+          },
+          {
+            "name": "nearbyLat",
+            "in": "query",
+            "type": "string"
+          },
+          {
+            "name": "nearbyLng",
+            "in": "query",
+            "type": "string"
+          },
+          {
+            "name": "nearbyRadiusM",
+            "in": "query",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Solicitação Inválida"
+          },
+          "401": {
+            "description": "Não autorizado"
+          },
+          "500": {
+            "description": "Erro Interno do Servidor"
+          }
+        }
       }
     },
     "/ocorrencias/nearby": {

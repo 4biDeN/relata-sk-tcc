@@ -136,6 +136,7 @@ const updateOcorrencia = async (req, res) => {
       "ocorrencia_status",
       "ocorrencia_prioridade",
       "ocorrencia_anonima",
+      "ocorrencia_atribuida",
     ];
     const updateData = {};
     for (const f of allowedFields)
@@ -376,12 +377,9 @@ const getOcorrenciasProximas = async (req, res) => {
     const lat = Number(req.query.lat);
     const lng = Number(req.query.lng);
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-      return res
-        .status(400)
-        .json({
-          message:
-            "Parâmetros lat e lng são obrigatórios e devem ser numéricos",
-        });
+      return res.status(400).json({
+        message: "Parâmetros lat e lng são obrigatórios e devem ser numéricos",
+      });
     }
 
     const radius_km =
@@ -425,12 +423,88 @@ const getOcorrenciasProximas = async (req, res) => {
 
     return res.status(200).json(Array.isArray(data) ? data : []);
   } catch (err) {
+    return res.status(500).json({
+      message: "Erro ao buscar ocorrências próximas",
+      detail: err.message,
+    });
+  }
+};
+
+const listOcorrencias = async (req, res) => {
+  try {
+    const role =
+      Number(req.user?.role ?? req.user?.tipo ?? req.user?.user_type_id ?? 0) ||
+      null;
+    const userId =
+      Number(req.user?.id ?? req.user?.user_id ?? req.user?.sub ?? 0) || null;
+    if (!role || !userId)
+      return res.status(401).json({ message: "Não autenticado" });
+
+    const q = String(req.query.q || "").trim();
+    const status_id =
+      req.query.status != null ? Number(req.query.status) : null;
+    const prioridade_id =
+      req.query.prioridade != null ? Number(req.query.prioridade) : null;
+    const withImages = String(req.query.withImages ?? "").toLowerCase();
+    const com_imagens = withImages === "1" || withImages === "true";
+    const orderDir =
+      String(req.query.orderDir || "desc").toLowerCase() === "asc"
+        ? "asc"
+        : "desc";
+    const limit = req.query.limit != null ? Number(req.query.limit) : 20;
+    const offset = req.query.offset != null ? Number(req.query.offset) : 0;
+    const nearbyLat =
+      req.query.nearbyLat != null ? Number(req.query.nearbyLat) : null;
+    const nearbyLng =
+      req.query.nearbyLng != null ? Number(req.query.nearbyLng) : null;
+    const nearbyRadiusM =
+      req.query.nearbyRadiusM != null ? Number(req.query.nearbyRadiusM) : null;
+
+    if (!Number.isInteger(limit) || limit <= 0 || limit > 100)
+      return res.status(400).json({ message: "limit inválido" });
+    if (!Number.isInteger(offset) || offset < 0)
+      return res.status(400).json({ message: "offset inválido" });
+    if (status_id !== null && !Number.isInteger(status_id))
+      return res.status(400).json({ message: "status inválido" });
+    if (prioridade_id !== null && !Number.isInteger(prioridade_id))
+      return res.status(400).json({ message: "prioridade inválida" });
+    if (nearbyLat !== null && !Number.isFinite(nearbyLat))
+      return res.status(400).json({ message: "nearbyLat inválido" });
+    if (nearbyLng !== null && !Number.isFinite(nearbyLng))
+      return res.status(400).json({ message: "nearbyLng inválido" });
+    if (
+      nearbyRadiusM !== null &&
+      (!Number.isFinite(nearbyRadiusM) || nearbyRadiusM <= 0)
+    )
+      return res.status(400).json({ message: "nearbyRadiusM inválido" });
+
+    const rows = await ocorrenciaService.listOcorrenciasRoleAware({
+      q,
+      status_id,
+      prioridade_id,
+      com_imagens,
+      orderDir,
+      limit,
+      offset,
+      role,
+      userId,
+      nearbyLat,
+      nearbyLng,
+      nearbyRadiusM,
+    });
+
+    const total = rows.length ? Number(rows[0].total_count || 0) : 0;
+    const items = rows.map((r) => {
+      const { total_count, ...rest } = r;
+      return rest;
+    });
+
+    res.set("X-Total-Count", String(total));
+    return res.status(200).json(items);
+  } catch (err) {
     return res
       .status(500)
-      .json({
-        message: "Erro ao buscar ocorrências próximas",
-        detail: err.message,
-      });
+      .json({ message: "Erro ao listar ocorrências", detail: err.message });
   }
 };
 
@@ -448,4 +522,5 @@ module.exports = {
   getOcorrenciasByLocal,
   getOcorrenciaBySetor,
   getOcorrenciasProximas,
+  listOcorrencias,
 };

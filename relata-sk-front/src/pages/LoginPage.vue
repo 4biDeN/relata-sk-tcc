@@ -14,13 +14,13 @@
         </div>
 
         <q-form @submit="onSubmit" greedy>
-          <q-input v-model="documento" label="Documento" mask="###########" class="q-mb-sm"
-            :rules="[v => !!v || 'Obrigatório']" outlined>
+          <q-input v-model="documento" label="Documento" mask="###.###.###-##" fill-mask :unmasked-value="true"
+            class="q-mb-sm" :rules="[v => !!v || 'Obrigatório']" outlined autocomplete="username">
             <template #prepend><q-icon name="person" /></template>
           </q-input>
 
-          <q-input v-model="password" :type="show ? 'text' : 'password'" label="Senha" :rules="[v => !!v || 'Obrigatório']"
-            outlined>
+          <q-input v-model="password" :type="show ? 'text' : 'password'" label="Senha"
+            :rules="[v => !!v || 'Obrigatório']" outlined>
             <template #prepend><q-icon name="lock" /></template>
             <template #append>
               <q-icon :name="show ? 'visibility_off' : 'visibility'" class="cursor-pointer" @click="show = !show" />
@@ -50,7 +50,6 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from 'src/stores/auth'
 import { Notify } from 'quasar'
 
-
 const documento = ref('')
 const password = ref('')
 const show = ref(false)
@@ -58,30 +57,52 @@ const loading = ref(false)
 const router = useRouter()
 const auth = useAuthStore()
 
+function defaultPathForRole(role) {
+  const r = Number(role)
+  return [2, 3, 4].includes(r) ? '/admin/ocorrencias' : '/home/ocorrencias'
+}
+
 const onSubmit = async () => {
+  if (!String(documento.value).trim() || !String(password.value).trim()) {
+    Notify.create({ type: 'warning', message: 'Preencha documento e senha.', position: 'top' })
+    return
+  }
+
   loading.value = true
   try {
-    await auth.login({ documento: documento.value, password: password.value })
-    router.push('/home')
+    await auth.login({
+      documento: String(documento.value).trim(),
+      password: String(password.value).trim()
+    })
+
+    const role =
+      Number(auth.user?.tipo) ||
+      Number(localStorage.getItem('user_tipo'))
+
+    const target = [1, 2, 3, 4].includes(role) ? ([2, 3, 4].includes(role) ? '/admin/ocorrencias' : '/home/ocorrencias') : '/login'
+    router.replace(target)
+
+    Notify.create({ type: 'positive', message: 'Login realizado com sucesso.', position: 'top' })
+    router.replace(defaultPathForRole(role))
   } catch (e) {
     const status = e?.response?.status
+    const msg = e?.response?.data?.message || e?.message
+
     if (status === 404) {
       Notify.create({ type: 'warning', message: 'Usuário não encontrado. Vamos criar sua conta.', position: 'top' })
       router.push('/register')
-      return
-    }
-    if (status === 401) {
+    } else if (status === 401) {
       Notify.create({ type: 'negative', message: 'Documento ou senha inválidos.', position: 'top' })
       password.value = ''
-      return
+    } else if (status === 403) {
+      Notify.create({ type: 'warning', message: 'Usuário inativo. Contate o administrador.', position: 'top' })
+    } else {
+      Notify.create({ type: 'negative', message: msg || 'Não foi possível entrar. Tente novamente.', position: 'top' })
     }
-    Notify.create({ type: 'negative', message: 'Não foi possível entrar. Tente novamente.', position: 'top' })
   } finally {
     loading.value = false
   }
 }
-
-
 </script>
 
 <style scoped>

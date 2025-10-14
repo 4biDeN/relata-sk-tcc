@@ -73,7 +73,7 @@ create table if not exists t_ocorrencia (
     ocorrencia_local_id integer references t_local(local_id),
     ocorrencia_prioridade smallint not null default 2 references t_ocorrencia_prioridade(ocorrencia_prioridade_id),
     updated_at timestamp not null default current_timestamp,
-    ocorrencia_atribuida integer not null default 1 references t_user_type(user_type_id),
+    ocorrencia_atribuida integer not null default 2 references t_user_type(user_type_id),
     ocorrencia_excluida boolean not null default false,
     ocorrencia_tsv tsvector
 );
