@@ -22,9 +22,9 @@
                     <div class="col">
                         <div class="text-h6 q-mb-xs">{{ item.ocorrencia_titulo }}</div>
                         <div class="row items-center q-gutter-sm">
-                            <q-chip size="sm" :color="statusStyle(item.ocorrencia_status_nome).color"
-                                text-color="white">
-                                {{ item.ocorrencia_status_nome }}
+                            <q-chip dense square :color="statusChipColor(item.ocorrencia_status)" text-color="white"
+                                class="pill">
+                                {{ labelStatus(item.ocorrencia_status) }}
                             </q-chip>
                             <q-chip size="sm" :color="item.ocorrencia_anonima ? 'grey-7' : 'positive'"
                                 text-color="white" outline>
@@ -45,27 +45,33 @@
                 <q-card-section>
                     <div class="row q-col-gutter-md">
                         <div class="col-12 col-md-6">
-                            <div class="text-bold text-grey-7 q-mb-xs">Resumo</div>
-                            <div class="q-mb-xs"><span class="text-grey-7">Data:</span> {{ dataFmt }}</div>
-                            <div class="q-mb-xs" v-if="podeVerAutor">
-                                <span class="text-grey-7">Autor:</span> {{ item.user_username }}
+                            <div class="field">
+                                <div class="field__label">Data</div>
+                                <div class="field__static">{{ dataFmt }}</div>
                             </div>
-                            <div class="q-mb-xs">
-                                <span class="text-grey-7">Local:</span>
-                                {{ item.local_rua }}, {{ item.local_bairro }} – {{ item.municipio_nome }}/{{
-                                    item.local_estado }}
-                                <span v-if="item.local_complemento"> ({{ item.local_complemento }})</span>
+                            <div class="field" v-if="podeVerAutor">
+                                <div class="field__label">Autor</div>
+                                <div class="field__static">{{ item.user_username }}</div>
+                            </div>
+                            <div class="field">
+                                <div class="field__label">Local</div>
+                                <div class="field__static">
+                                    {{ item.local_rua }}, {{ item.local_bairro }} – {{ item.municipio_nome }}/{{
+                                        item.local_estado }}
+                                    <span v-if="item.local_complemento"> ({{ item.local_complemento }})</span>
+                                </div>
                             </div>
                         </div>
 
                         <div class="col-12 col-md-6">
                             <div class="text-bold text-grey-7 q-mb-xs">Descrição</div>
-                            <div class="pre-wrap">{{ item.ocorrencia_descricao }}</div>
+                            <div class="field">
+                                <div class="field__static pre-wrap">{{ item.ocorrencia_descricao }}</div>
+                            </div>
                         </div>
                     </div>
                 </q-card-section>
 
-                <!-- MAPA -->
                 <q-separator />
                 <q-card-section>
                     <div class="row items-center q-col-gutter-sm q-mb-sm">
@@ -100,9 +106,12 @@
 
                     <div v-if="item.imagens && item.imagens.length" class="row q-col-gutter-sm">
                         <div v-for="(img, i) in item.imagens" :key="img.ocorrencia_imagem_id || i"
-                            class="col-6 col-sm-4 col-md-3">
-                            <q-card flat bordered class="cursor-pointer" @click="abrirLightbox(i)">
+                            class="col-6 col-sm-4 col-md-3 col-lg-2">
+                            <q-card flat bordered class="thumb cursor-pointer" @click="abrirLightbox(i)">
                                 <q-img :src="img.ocorrencia_imagem_url" ratio="1" />
+                                <div class="thumb-overlay">
+                                    <q-btn dense flat round icon="zoom_in" color="white" />
+                                </div>
                             </q-card>
                         </div>
                     </div>
@@ -167,22 +176,22 @@ function fmtBR(v) {
 }
 const dataFmt = computed(() => fmtBR(item.value?.ocorrencia_data))
 
-function norm(s) {
-    return String(s || '')
-        .normalize('NFD')
-        .replace(/\p{Diacritic}/gu, '')
-        .toLowerCase()
-        .trim()
+const STATUS_OPTIONS = [
+    { label: 'Aberto', value: 1 },
+    { label: 'Em análise', value: 2 },
+    { label: 'Em andamento', value: 3 },
+    { label: 'Resolvido', value: 4 },
+    { label: 'Fechado', value: 5 }
+]
+
+const STATUS_BY_ID = Object.fromEntries(STATUS_OPTIONS.map(o => [o.value, o.label]))
+function labelStatus(id) {
+    return STATUS_BY_ID[Number(id)] || '—'
 }
-const STATUS_STYLES = {
-    'aberto': { color: 'orange-7' },
-    'em analise': { color: 'indigo-7' },
-    'em andamento': { color: 'info' },
-    'resolvido': { color: 'positive' },
-    'fechado': { color: 'green-8' }
-}
-function statusStyle(name) {
-    return STATUS_STYLES[norm(name)] || { color: 'grey-6' }
+
+function statusChipColor(id) {
+    const map = { 1: 'primary', 2: 'indigo-6', 3: 'info', 4: 'positive', 5: 'green-8' }
+    return map[Number(id)] || 'grey-6'
 }
 
 const mapEl = ref(null)
@@ -320,5 +329,60 @@ const carouselHeight = computed(() => {
     max-width: 100vw;
     max-height: calc(100vh - 64px);
     object-fit: contain;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+    margin-bottom: 8px;
+}
+
+.field__label {
+    font-size: 12px;
+    color: #607d8b;
+}
+
+.field__static {
+    padding: 8px 12px;
+    background: #f7f7f9;
+    border: 1px solid rgba(0, 0, 0, .06);
+    border-radius: 10px;
+}
+
+.thumb {
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, .06);
+}
+
+.thumb :deep(.q-img) {
+    object-fit: cover;
+}
+
+.thumb-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-end;
+    gap: 6px;
+    padding: 6px;
+    opacity: 0;
+    background: linear-gradient(180deg, rgba(0, 0, 0, .25), rgba(0, 0, 0, 0) 50%);
+    transition: opacity .18s ease;
+}
+
+.thumb:hover .thumb-overlay {
+    opacity: 1;
+}
+
+.pill {
+    border-radius: 9999px;
+    padding: 4px 12px;
+    font-weight: 700;
+    font-size: 12px;
 }
 </style>

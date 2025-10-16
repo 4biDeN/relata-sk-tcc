@@ -30,3 +30,15 @@ export async function updateOcorrenciaService(id, payload) {
   const { data } = await api.put(`/ocorrencias/${id}`, payload)
   return data
 }
+
+export async function uploadOcorrenciaImagem(id, file) {
+  const fd = new FormData()
+  fd.append('file', file)
+  const { data } = await api.post(`/api/ocorrencias/${id}/imagens`, fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+  return data
+}
+
+export async function deleteOcorrenciaImagem(id, imagemId) {
+  const { data } = await api.delete(`/api/ocorrencias/${id}/imagens/${imagemId}`)
+  return data
+}

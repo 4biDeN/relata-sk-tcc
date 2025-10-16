@@ -2,20 +2,49 @@
     <q-page padding>
         <q-card flat bordered>
             <q-card-section>
-                <div class="row items-center q-col-gutter-sm">
-                    <q-input v-model="busca" dense placeholder="Buscar por título ou protocolo" class="col-12 col-sm-4"
-                        @keyup.enter="carregar" clearable />
-                    <q-select v-model="statusSel" :options="statusOptions" label="Status" dense class="col-6 col-sm-2"
-                        clearable emit-value map-options />
-                    <q-select v-model="prioridadeSel" :options="prioridadeOptions" label="Prioridade" dense
-                        class="col-6 col-sm-2" clearable emit-value map-options />
-                    <q-toggle v-model="onlyWithImages" label="Somente com imagens" />
-                    <q-space />
-                    <q-btn color="primary" label="Buscar" @click="carregar" />
-                    <q-btn flat label="Limpar" @click="limpar" />
-                </div>
-            </q-card-section>
+                <div class="filters-wrap">
+                    <div class="row items-center q-col-gutter-sm">
+                        <q-input v-model="busca" dense placeholder="Buscar por título ou protocolo"
+                            class="col-12 col-sm-4" @keyup.enter="carregar" clearable />
 
+                        <q-input v-model="fromDisplay" label="De" dense class="col-6 col-sm-2" clearable readonly>
+                            <template #append>
+                                <q-icon name="event" class="cursor-pointer">
+                                    <q-popup-proxy ref="fromProxy" transition-show="scale" transition-hide="scale"
+                                        anchor="bottom right" self="top right">
+                                        <q-date v-model="from" mask="YYYY-MM-DD" minimal :locale="ptBR"
+                                            @update:model-value="onPickFrom" />
+                                    </q-popup-proxy>
+                                </q-icon>
+                            </template>
+                        </q-input>
+
+                        <q-input v-model="toDisplay" label="Até" dense class="col-6 col-sm-2" clearable readonly>
+                            <template #append>
+                                <q-icon name="event" class="cursor-pointer">
+                                    <q-popup-proxy ref="toProxy" transition-show="scale" transition-hide="scale"
+                                        anchor="bottom right" self="top right">
+                                        <q-date v-model="to" mask="YYYY-MM-DD" minimal :locale="ptBR"
+                                            @update:model-value="onPickTo" />
+                                    </q-popup-proxy>
+                                </q-icon>
+                            </template>
+                        </q-input>
+
+                        <q-select v-model="statusSel" :options="statusOptions" label="Status" dense
+                            class="col-6 col-sm-2" clearable emit-value map-options />
+                        <q-select v-model="prioridadeSel" :options="prioridadeOptions" label="Prioridade" dense
+                            class="col-6 col-sm-2" clearable emit-value map-options />
+
+                        <q-toggle v-model="onlyWithImages" label="Somente com imagens" />
+
+                        <q-space />
+
+                        <q-btn color="green-9" label="Buscar" @click="carregar" />
+                    </div>
+                </div>
+
+            </q-card-section>
             <q-separator />
 
             <q-card-section>
@@ -48,87 +77,89 @@
                     </template>
 
                     <template #body-cell-ocorrencia_status_nome="props">
-                        <q-td :props="props">
-                            <q-select dense borderless options-dense emit-value map-options :options="statusOptions"
-                                v-model="props.row.status_id"
-                                @update:model-value="v => salvarCampo(props.row, 'ocorrencia_status', Number(v))"
-                                @click.stop @mousedown.stop @keydown.stop class="pill-select"
-                                popup-content-class="pill-menu">
-                                <template #selected>
-                                    <q-chip clickable size="sm" :color="statusChipColor(props.row.status_id)"
-                                        text-color="white" class="q-ma-none rounded-pill">
-                                        {{ labelStatus(props.row.status_id) }}
-                                    </q-chip>
-                                </template>
-
-                                <template #option="scope">
-                                    <q-item v-bind="scope.itemProps" clickable>
-                                        <q-item-section>
-                                            <q-chip size="sm" :color="statusChipColor(scope.opt.value)"
-                                                text-color="white" class="q-ma-none rounded-pill">
-                                                {{ scope.opt.label }}
-                                            </q-chip>
-                                        </q-item-section>
-                                    </q-item>
-                                </template>
-                            </q-select>
+                        <q-td :props="props" class="pill-td" @click.stop>
+                            <div class="pill-wrap">
+                                <q-select class="pill-select" dense borderless options-dense emit-value map-options
+                                    :options="statusOptions" v-model="props.row.status_id"
+                                    dropdown-icon="keyboard_arrow_down"
+                                    @update:model-value="v => salvarCampo(props.row, 'ocorrencia_status', Number(v))"
+                                    @click.stop @mousedown.stop @keydown.stop popup-content-class="pill-menu">
+                                    <template #selected>
+                                        <q-chip dense square :color="statusChipColor(props.row.status_id)"
+                                            text-color="white" class="rounded-pill pill-chip" @click.stop>
+                                            {{ labelStatus(props.row.status_id) }}
+                                        </q-chip>
+                                    </template>
+                                    <template #option="scope">
+                                        <q-item v-bind="scope.itemProps">
+                                            <q-item-section>
+                                                <q-chip dense square :color="statusChipColor(scope.opt.value)"
+                                                    text-color="white" class="rounded-pill">
+                                                    {{ scope.opt.label }}
+                                                </q-chip>
+                                            </q-item-section>
+                                        </q-item>
+                                    </template>
+                                </q-select>
+                            </div>
                         </q-td>
                     </template>
 
                     <template #body-cell-prioridade_nome="props">
-                        <q-td :props="props">
-                            <q-select dense borderless options-dense emit-value map-options :options="prioridadeOptions"
-                                v-model="props.row.prioridade_id"
-                                @update:model-value="v => salvarCampo(props.row, 'ocorrencia_prioridade', v)"
-                                @click.stop @mousedown.stop @keydown.stop class="pill-select"
-                                popup-content-class="pill-menu">
-                                <template #selected>
-                                    <q-chip clickable size="sm" :color="prioridadeChipColor(props.row.prioridade_id)"
-                                        text-color="white" class="q-ma-none rounded-pill">
-                                        {{ labelPrioridade(props.row.prioridade_id) }}
-                                    </q-chip>
-                                </template>
-
-                                <template #option="scope">
-                                    <q-item v-bind="scope.itemProps" clickable>
-                                        <q-item-section>
-                                            <q-chip size="sm" :color="prioridadeChipColor(scope.opt.value)"
-                                                text-color="white" class="q-ma-none rounded-pill">
-                                                {{ scope.opt.label }}
-                                            </q-chip>
-                                        </q-item-section>
-                                    </q-item>
-                                </template>
-                            </q-select>
+                        <q-td :props="props" class="pill-td" @click.stop>
+                            <div class="pill-wrap">
+                                <q-select class="pill-select" dense borderless options-dense emit-value map-options
+                                    :options="prioridadeOptions" v-model="props.row.prioridade_id"
+                                    dropdown-icon="keyboard_arrow_down"
+                                    @update:model-value="v => salvarCampo(props.row, 'ocorrencia_prioridade', v)"
+                                    @click.stop @mousedown.stop @keydown.stop popup-content-class="pill-menu">
+                                    <template #selected>
+                                        <q-chip dense square :color="prioridadeChipColor(props.row.prioridade_id)"
+                                            text-color="white" class="rounded-pill pill-chip" @click.stop>
+                                            {{ labelPrioridade(props.row.prioridade_id) }}
+                                        </q-chip>
+                                    </template>
+                                    <template #option="scope">
+                                        <q-item v-bind="scope.itemProps">
+                                            <q-item-section>
+                                                <q-chip dense square :color="prioridadeChipColor(scope.opt.value)"
+                                                    text-color="white" class="rounded-pill">
+                                                    {{ scope.opt.label }}
+                                                </q-chip>
+                                            </q-item-section>
+                                        </q-item>
+                                    </template>
+                                </q-select>
+                            </div>
                         </q-td>
                     </template>
 
                     <template #body-cell-atribuida_setor="props">
-                        <q-td :props="props">
-                            <q-select dense borderless options-dense emit-value map-options :options="atribuidaOptions"
-                                v-model="props.row.atribuida_id"
-                                @update:model-value="v => salvarCampo(props.row, 'ocorrencia_atribuida', v)" @click.stop
-                                @mousedown.stop @keydown.stop class="pill-select" popup-content-class="pill-menu">
-                                <template #selected>
-                                    <q-chip clickable size="sm" :color="atribuidaChipColor(props.row.atribuida_id)"
-                                        text-color="white" class="q-ma-none rounded-pill">
-                                        {{ labelAtribuida(props.row.atribuida_id) }}
-                                    </q-chip>
-                                </template>
-
-                                <template #option="scope">
-                                    <q-item v-bind="scope.itemProps" clickable>
-                                        <q-item-section>
-                                            <q-chip size="sm" :color="atribuidaChipColor(scope.opt.value)"
-                                                text-color="white" class="q-ma-none rounded-pill">
-                                                {{ scope.opt.label }}
-                                            </q-chip>
-                                        </q-item-section>
-                                        <q-item-section side v-if="props.row.atribuida_id === scope.opt.value">
-                                        </q-item-section>
-                                    </q-item>
-                                </template>
-                            </q-select>
+                        <q-td :props="props" class="pill-td" @click.stop>
+                            <div class="pill-wrap">
+                                <q-select class="pill-select" dense borderless options-dense emit-value map-options
+                                    :options="atribuidaOptions" v-model="props.row.atribuida_id"
+                                    dropdown-icon="keyboard_arrow_down"
+                                    @update:model-value="v => salvarCampo(props.row, 'ocorrencia_atribuida', v)"
+                                    @click.stop @mousedown.stop @keydown.stop popup-content-class="pill-menu">
+                                    <template #selected>
+                                        <q-chip dense square :color="atribuidaChipColor(props.row.atribuida_id)"
+                                            text-color="white" class="rounded-pill pill-chip" @click.stop>
+                                            {{ labelAtribuida(props.row.atribuida_id) }}
+                                        </q-chip>
+                                    </template>
+                                    <template #option="scope">
+                                        <q-item v-bind="scope.itemProps">
+                                            <q-item-section>
+                                                <q-chip dense square :color="atribuidaChipColor(scope.opt.value)"
+                                                    text-color="white" class="rounded-pill">
+                                                    {{ scope.opt.label }}
+                                                </q-chip>
+                                            </q-item-section>
+                                        </q-item>
+                                    </template>
+                                </q-select>
+                            </div>
                         </q-td>
                     </template>
 
@@ -148,7 +179,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { onMounted, ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { Notify } from 'quasar'
 import { listOcorrencias, updateOcorrenciaService } from 'src/services/ocorrenciaService'
@@ -161,6 +192,55 @@ const onlyWithImages = ref(false)
 const loading = ref(false)
 const rows = ref([])
 const pagination = ref({ page: 1, rowsPerPage: 20 })
+
+const from = ref('')
+const to = ref('')
+const fromProxy = ref(null)
+const toProxy = ref(null)
+
+const ptBR = {
+    days: 'domingo_segunda-feira_terca-feira_quarta-feira_quinta-feira_sexta-feira_sabado'.split('_'),
+    daysShort: 'dom_seg_ter_qua_qui_sex_sáb'.split('_'),
+    months: 'janeiro_fevereiro_marco_abril_maio_junho_julho_agosto_setembro_outubro_novembro_dezembro'.split('_'),
+    monthsShort: 'jan_fev_mar_abr_mai_jun_jul_ago_set_out_nov_dez'.split('_'),
+    firstDayOfWeek: 1
+}
+
+function toBR(ymd) {
+    if (!ymd) return ''
+    const [Y, M, D] = ymd.split('-')
+    if (!Y || !M || !D) return ''
+    return `${D.padStart(2, '0')}/${M.padStart(2, '0')}/${Y}`
+}
+function toYMD(br) {
+    if (!br) return ''
+    const m = br.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
+    if (!m) return ''
+    const D = m[1].padStart(2, '0')
+    const M = m[2].padStart(2, '0')
+    const Y = m[3]
+    return `${Y}-${M}-${D}`
+}
+
+const fromDisplay = computed({
+    get: () => toBR(from.value),
+    set: (v) => { from.value = toYMD(v) }
+})
+const toDisplay = computed({
+    get: () => toBR(to.value),
+    set: (v) => { to.value = toYMD(v) }
+})
+
+function onPickFrom() { fromProxy.value?.hide() }
+function onPickTo() { toProxy.value?.hide() }
+
+watch([from, to], ([f, t]) => {
+    if (f && t && new Date(f) > new Date(t)) {
+        const tmp = from.value
+        from.value = to.value
+        to.value = tmp
+    }
+})
 
 const columns = [
     { name: 'thumb', label: '', field: 'thumbnail_url', align: 'left' },
@@ -266,11 +346,12 @@ async function carregar() {
             status: statusSel.value ?? undefined,
             prioridade: prioridadeSel.value ?? undefined,
             withImages: onlyWithImages.value ? 1 : 0,
+            from: from.value || undefined,
+            to: to.value || undefined,
             orderDir: 'desc',
             limit: pagination.value.rowsPerPage,
             offset: (pagination.value.page - 1) * pagination.value.rowsPerPage
         }
-
         const { data, total } = await listOcorrencias(params)
         rows.value = normalizeRows(data)
         pagination.value.rowsNumber = total
@@ -283,25 +364,26 @@ async function carregar() {
     }
 }
 
-function limpar() {
-    busca.value = ''
-    statusSel.value = null
-    prioridadeSel.value = null
-    onlyWithImages.value = false
-    pagination.value.page = 1
-    carregar()
+
+function isEditorEvent(evt) {
+    const path = typeof evt.composedPath === 'function' ? evt.composedPath() : []
+    const testEl = (el) => {
+        if (!el || !el.classList) return false
+        return el.classList.contains('pill-select')
+            || el.classList.contains('pill-menu')
+            || el.classList.contains('q-field')
+            || el.classList.contains('q-menu')
+            || el.classList.contains('q-chip')
+    }
+    if (path.length) return path.some(testEl)
+    const t = evt.target
+    return !!(t?.closest && t.closest('.pill-select, .pill-menu, .q-field, .q-menu, .q-chip'))
 }
 
 function irDetalhe(evt, row) {
-    // reaproveita a mesma página de detalhe do cidadão por enquanto
-    // depois criaremos um detalhe admin com ações (editar/atribuir)
-    // e navegaremos para /admin/ocorrencias/:id
+    if (isEditorEvent(evt)) return
     if (!row?.ocorrencia_id) return
-    // cliente:
-    // router.push(`/home/ocorrencias/${row.ocorrencia_id}`)
-    // admin (quando fizermos a rota):
-    // router.push(`/admin/ocorrencias/${row.ocorrencia_id}`)
-    router.push(`/home/ocorrencias/${row.ocorrencia_id}`)
+    router.push({ name: 'admin.ocorrencia.detalhe', params: { id: String(row.ocorrencia_id) } })
 }
 
 onMounted(carregar)
@@ -312,20 +394,119 @@ onMounted(carregar)
     max-width: 320px;
 }
 
-.pill-select .q-field__control {
-    padding: 0;
-    min-height: auto;
+.pill-td {
+    padding: 6px 8px !important;
 }
 
-.pill-select .q-field__marginal {
-    display: none;
+.pill-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100%;
+    min-width: 0;
+}
+
+.pill-select {
+    min-width: 120px;
+    max-width: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 2px;
+}
+
+:deep(.pill-select .q-field__control) {
+    padding: 0;
+    min-height: 0;
+}
+
+:deep(.pill-select .q-field__marginal) {
+    margin-left: 4px;
+}
+
+:deep(.pill-menu .q-item) {
+    padding: 4px 8px;
 }
 
 .rounded-pill {
     border-radius: 9999px;
+    padding: 4px 12px;
+    font-weight: 600;
+    font-size: 12px;
 }
 
-.pill-menu .q-item {
-    padding: 4px 8px;
+.pill-chip {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.no-pointer-events {
+    pointer-events: none;
+}
+
+@media (max-width: 1024px) {
+    .pill-select {
+        min-width: 96px;
+    }
+}
+
+@media (max-width: 768px) {
+    .pill-select {
+        min-width: 84px;
+    }
+}
+
+.filters-wrap {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    margin-bottom: 12px;
+}
+
+.filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 12px;
+    width: 100%;
+    max-width: 1100px;
+}
+
+.filters>*:not(.filters__action) {
+    flex: 1 1 220px;
+    min-width: 180px;
+}
+
+.filters__action {
+    order: 99;
+    margin-left: auto;
+    flex: 0 0 200px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.filters__action .q-btn {
+    height: 40px;
+    padding: 0 24px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    color: white;
+}
+
+@media (max-width: 900px) {
+    .filters>*:not(.filters__action) {
+        flex: 1 1 48%;
+    }
+
+    .filters__action {
+        flex: 1 0 100%;
+        margin-left: 0;
+        justify-content: stretch;
+    }
+
+    .filters__action .q-btn {
+        width: 100%;
+    }
 }
 </style>

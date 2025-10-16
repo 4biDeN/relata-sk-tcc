@@ -4,20 +4,18 @@ const crypt = require("../auth/salt");
 const createUser = async (params) => {
   const { user_username, user_email, user_documento, user_password } = params;
   const { salt, hashedPassword } = crypt.createPassword(user_password);
-
   const sql = `
     insert into t_usuario (
-        user_username,
-        user_email,
-        user_documento,
-        user_password,
-        user_salt,
-        user_token_version
-        )
+      user_username,
+      user_email,
+      user_documento,
+      user_password,
+      user_salt,
+      user_token_version
+    )
     values ($1, $2, $3, $4, $5, 0)
-    returning user_id, user_username, user_email, user_documento
-    `;
-
+    returning user_id, user_username, user_email, user_documento, user_tipo, user_token_version
+  `;
   const result = await db.query(sql, [
     user_username,
     user_email,
@@ -28,21 +26,96 @@ const createUser = async (params) => {
   return result.rows[0];
 };
 
-const getAllUsers = async () => {
+const getAllUsers = async (params = {}) => {
+  const {
+    field,
+    q,
+    limit = 20,
+    offset = 0,
+    sortBy = "user_username",
+    sortDir = "asc",
+    includeInactive,
+  } = params;
+
+  const allowFields = new Set([
+    "user_username",
+    "user_email",
+    "user_documento",
+    "user_tipo",
+  ]);
+  const allowSort = new Set([
+    "user_username",
+    "user_email",
+    "user_documento",
+    "user_tipo",
+  ]);
+
+  const where = [];
+  const vals = [];
+  let i = 1;
+
+  // ativos por padrão
+  if (!includeInactive) where.push("u.user_is_active = true");
+
+  if (q && field && allowFields.has(field)) {
+    if (field === "user_documento") {
+      where.push(
+        `regexp_replace(u.user_documento, '[^0-9]', '', 'g') ILIKE '%' || regexp_replace($${i++}, '[^0-9]', '', 'g') || '%'`
+      );
+      vals.push(q);
+    } else if (field === "user_tipo") {
+      where.push(`u.user_tipo = $${i++}`);
+      vals.push(Number(q));
+    } else {
+      where.push(`u.${field} ILIKE '%' || $${i++} || '%'`);
+      vals.push(q);
+    }
+  } else if (q) {
+    where.push(`(
+      u.user_username ILIKE '%' || $${i} || '%' OR
+      u.user_email ILIKE '%' || $${i} || '%' OR
+      regexp_replace(u.user_documento, '[^0-9]', '', 'g') ILIKE '%' || regexp_replace($${i}, '[^0-9]', '', 'g') || '%'
+    )`);
+    vals.push(q);
+    i++;
+  }
+
+  const whereSql = where.length ? `where ${where.join(" and ")}` : "";
+
+  const order = allowSort.has(String(sortBy))
+    ? `u.${String(sortBy)}`
+    : "u.user_username";
+  const dir = String(sortDir).toLowerCase() === "desc" ? "desc" : "asc";
+
   const sql = `
-        select u.user_id, u.user_username, u.user_email, u.user_documento, u.user_tipo, u.user_token_version
-        from t_usuario u
-    `;
-  const result = await db.query(sql);
-  return result.rows;
+    select
+      u.user_id,
+      u.user_username,
+      u.user_email,
+      u.user_documento,
+      u.user_tipo,
+      u.user_is_active,
+      u.user_token_version,
+      count(*) over() as _total
+    from t_usuario u
+    ${whereSql}
+    order by ${order} ${dir}
+    limit $${i++} offset $${i++}
+  `;
+  vals.push(Number(limit), Number(offset));
+
+  const result = await db.query(sql, vals);
+  const total = result.rows.length ? Number(result.rows[0]._total) : 0;
+  const rows = result.rows.map(({ _total, ...r }) => r);
+  return { total, rows };
 };
 
 const getUserById = async (user_id) => {
   const sql = `
-        select u.user_id, u.user_username, u.user_email, u.user_documento, u.user_tipo, u.user_token_version
-        from t_usuario u
-        where u.user_id = $1 and u.user_is_active = true
-    `;
+    select u.user_id, u.user_username, u.user_email, u.user_documento, u.user_tipo, u.user_is_active, u.user_token_version
+    from t_usuario u
+    where u.user_id = $1
+  `;
   const result = await db.query(sql, [user_id]);
   return result.rows.length ? result.rows[0] : null;
 };
@@ -80,7 +153,6 @@ const updateUser = async (user_id, fields) => {
     update t_usuario
     set ${setClauses.join(", ")}
     where user_id = $${i}
-      and user_is_active = true
     returning user_id
   `;
   const result = await db.query(sql, values);
@@ -89,10 +161,10 @@ const updateUser = async (user_id, fields) => {
 
 const deleteUser = async (user_id) => {
   const sql = `
-        update t_usuario
-            set user_is_active = false
-        where user_id = $1
-    `;
+    update t_usuario
+    set user_is_active = false
+    where user_id = $1
+  `;
   await db.query(sql, [user_id]);
 };
 

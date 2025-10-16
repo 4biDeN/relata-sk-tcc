@@ -124,7 +124,9 @@ const getOcorrenciaById = async (ocorrencia_id) => {
       o.ocorrencia_data,
       o.ocorrencia_protocolo,
       o.ocorrencia_anonima,
-      os.ocorrencia_status_nome,
+      o.ocorrencia_status,
+      o.ocorrencia_prioridade,
+      o.ocorrencia_atribuida,
       u.user_username,
       m.municipio_nome,
       l.local_estado,
@@ -144,7 +146,6 @@ const getOcorrenciaById = async (ocorrencia_id) => {
         '[]'::json
       ) as imagens
     from t_ocorrencia o
-    join t_ocorrencia_status os on o.ocorrencia_status = os.ocorrencia_status_id
     join t_usuario u on o.ocorrencia_user_id = u.user_id
     join t_local l on o.ocorrencia_local_id = l.local_id
     join t_municipio m on l.local_municipio_id = m.municipio_id
@@ -153,7 +154,7 @@ const getOcorrenciaById = async (ocorrencia_id) => {
       and o.ocorrencia_excluida = false
     group by
       o.ocorrencia_id, o.ocorrencia_user_id, o.ocorrencia_titulo, o.ocorrencia_descricao, o.ocorrencia_data,
-      o.ocorrencia_protocolo, o.ocorrencia_anonima, os.ocorrencia_status_nome,
+      o.ocorrencia_protocolo, o.ocorrencia_anonima, o.ocorrencia_status,
       u.user_username, m.municipio_nome, l.local_estado, l.local_bairro,
       l.local_rua, l.local_complemento, l.location
   `;
@@ -697,6 +698,7 @@ const listOcorrenciasRoleAware = async ({
       o.ocorrencia_status,
       o.ocorrencia_prioridade,
       o.ocorrencia_atribuida,
+      o.ocorrencia_anonima,
       m.municipio_nome,
       l.local_estado,
       l.local_bairro,
@@ -710,7 +712,7 @@ const listOcorrenciasRoleAware = async ({
     WHERE ${where.join(" AND ")}
     GROUP BY
       o.ocorrencia_id, o.ocorrencia_protocolo, o.ocorrencia_titulo, o.ocorrencia_descricao, o.ocorrencia_data,
-      o.ocorrencia_status, o.ocorrencia_prioridade, o.ocorrencia_atribuida, m.municipio_nome, l.local_estado, l.local_bairro, l.local_rua
+      o.ocorrencia_status, o.ocorrencia_prioridade, o.ocorrencia_atribuida, o.ocorrencia_anonima, m.municipio_nome, l.local_estado, l.local_bairro, l.local_rua
     ${having}
     ORDER BY o.ocorrencia_data ${order}
     LIMIT $${i} OFFSET $${i + 1}

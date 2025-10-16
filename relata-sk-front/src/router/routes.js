@@ -57,7 +57,7 @@ const routes = [
   {
     path: '/admin',
     component: () => import('src/layouts/AdminLayout.vue'),
-    meta: { roles: [2, 3, 4] },
+    meta: { requiresAuth: true, roles: [2, 3, 4] },
     children: [
       {
         path: '',
@@ -67,6 +67,16 @@ const routes = [
         path: 'ocorrencias',
         name: 'admin.ocorrencias',
         component: () => import('src/pages/admin/OcorrenciasAdminList.vue'),
+      },
+      {
+        path: 'ocorrencias/:id',
+        name: 'admin.ocorrencia.detalhe',
+        component: () => import('src/pages/admin/OcorrenciaAdminDetalhe.vue'),
+      },
+      {
+        path: 'usuarios',
+        name: 'admin.usuarios',
+        component: () => import('src/pages/admin/UsuariosAdmin.vue'),
       },
     ],
   },

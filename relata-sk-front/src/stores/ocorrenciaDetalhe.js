@@ -1,10 +1,11 @@
 import { defineStore } from 'pinia'
-import { ocorrenciaService } from 'src/services/ocorrenciaService'
+import { ocorrenciaService, updateOcorrenciaService } from 'src/services/ocorrenciaService'
 
 export const useOcorrenciaDetalheStore = defineStore('ocorrenciaDetalhe', {
   state: () => ({
     byId: {},
     loading: false,
+    saving: false,
     error: null
   }),
   getters: {
@@ -24,6 +25,25 @@ export const useOcorrenciaDetalheStore = defineStore('ocorrenciaDetalhe', {
         throw e
       } finally {
         this.loading = false
+      }
+    },
+    mergeLocal(id, partial) {
+      const curr = this.byId[id] || {}
+      this.byId[id] = { ...curr, ...partial }
+      return this.byId[id]
+    },
+    async atualizar(id, payload) {
+      this.saving = true
+      this.error = null
+      try {
+        const data = await updateOcorrenciaService(id, payload)
+        this.byId[id] = data
+        return data
+      } catch (e) {
+        this.error = e
+        throw e
+      } finally {
+        this.saving = false
       }
     },
     limpar(id) {

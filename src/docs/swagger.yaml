@@ -255,7 +255,7 @@
         }
       }
     },
-    "/getUser": {
+    "/users": {
       "get": {
         "tags": [
           "Usuários"
@@ -266,6 +266,41 @@
           {
             "name": "slice(7",
             "in": "header",
+            "type": "string"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "type": "string"
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "type": "string"
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "type": "string"
+          },
+          {
+            "name": "sortDir",
+            "in": "query",
+            "type": "string"
+          },
+          {
+            "name": "field",
+            "in": "query",
+            "type": "string"
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "type": "string"
+          },
+          {
+            "name": "includeInactive",
+            "in": "query",
             "type": "string"
           }
         ],
@@ -337,7 +372,109 @@
         }
       }
     },
-    "/getUser/{id}": {
+    "/users/{id}": {
+      "get": {
+        "tags": [
+          "Usuários"
+        ],
+        "summary": "Obtém um usuário (novo endpoint)",
+        "description": "Retorna dados do usuário pelo ID.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "description": "ID do usuário",
+            "example": 1
+          },
+          {
+            "name": "slice(7",
+            "in": "header",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Dados do usuário",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "user_id": {
+                  "type": "number",
+                  "example": 1
+                },
+                "user_username": {
+                  "type": "string",
+                  "example": "usuario1"
+                },
+                "user_email": {
+                  "type": "string",
+                  "example": "usuario1@email.com"
+                },
+                "user_documento": {
+                  "type": "string",
+                  "example": "12345678900"
+                },
+                "user_tipo": {
+                  "type": "string",
+                  "example": "admin"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "401": {
+            "description": "Não autorizado",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "mensagem": {
+                  "type": "string",
+                  "example": "Token inválido ou ausente"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "404": {
+            "description": "Usuário não encontrado",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "mensagem": {
+                  "type": "string",
+                  "example": "Usuário não encontrado"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno do servidor",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "mensagem": {
+                  "type": "string",
+                  "example": "Erro ao buscar usuário"
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/user/{id}": {
       "get": {
         "tags": [
           "Usuários"
@@ -440,9 +577,7 @@
             }
           }
         }
-      }
-    },
-    "/user/{id}": {
+      },
       "put": {
         "tags": [
           "Usuários"
@@ -580,35 +715,7 @@
         ],
         "responses": {
           "204": {
-            "description": "Dados do usuário",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "id": {
-                  "type": "number",
-                  "example": 1
-                },
-                "user_username": {
-                  "type": "string",
-                  "example": "usuario1"
-                },
-                "user_email": {
-                  "type": "string",
-                  "example": "usuario1@email.com"
-                },
-                "user_documento": {
-                  "type": "string",
-                  "example": "12345678900"
-                },
-                "user_tipo": {
-                  "type": "number",
-                  "example": 1
-                }
-              },
-              "xml": {
-                "name": "main"
-              }
-            }
+            "description": "Usuário inativado com sucesso"
           },
           "401": {
             "description": "Não autorizado"
