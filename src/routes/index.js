@@ -2,7 +2,7 @@
 const Login = require('./login');
 const Ocorrencias = require('./ocorrenciaRoute');
 const Locais = require('./localRoute');
-const Historicos = require('./histOcorrenciaRoute');
+const Historicos = require('./ocorrenciaHistoricoRoutes');
 const Municipios = require('./municipiosRoute');
 const Imagens = require('./ocorrenciaImagemRoute')
 

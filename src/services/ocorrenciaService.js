@@ -2,67 +2,67 @@ const db = require("../configs/pg");
 const { toPublicUrl } = require("../storage");
 
 const createOcorrencia = async (data) => {
-  const client = await db.getClient();
-  try {
-    await client.query("BEGIN");
+    const client = await db.getClient();
+    try {
+        await client.query("BEGIN");
+        await client.query(`select set_config('app.user_id', $1, true)`, [String(userId ?? '')]);
 
-    const hasCoords =
-      data.local?.local_latitude != null && data.local?.local_longitude != null;
+        const hasCoords =
+            data.local?.local_latitude != null && data.local?.local_longitude != null;
 
-    const selLocalSql = `
+        const selLocalSql = `
       select local_id
       from t_local
       where local_municipio_id = $1
         and local_bairro = $2
         and local_rua = $3
         and coalesce(local_complemento,'') = coalesce($4,'')
-        ${
-          hasCoords
-            ? "and ST_DWithin(location, ST_SetSRID(ST_MakePoint($5,$6),4326)::geography, 10)"
-            : ""
-        }
+        ${hasCoords
+                ? "and ST_DWithin(location, ST_SetSRID(ST_MakePoint($5,$6),4326)::geography, 10)"
+                : ""
+            }
     `;
-    const selLocalParams = [
-      data.local?.local_municipio_id,
-      data.local?.local_bairro,
-      data.local?.local_rua,
-      data.local?.local_complemento || null,
-      ...(hasCoords
-        ? [data.local.local_longitude, data.local.local_latitude]
-        : []),
-    ];
-    let localRes = await client.query(selLocalSql, selLocalParams);
-    let localId;
+        const selLocalParams = [
+            data.local?.local_municipio_id,
+            data.local?.local_bairro,
+            data.local?.local_rua,
+            data.local?.local_complemento || null,
+            ...(hasCoords
+                ? [data.local.local_longitude, data.local.local_latitude]
+                : []),
+        ];
+        let localRes = await client.query(selLocalSql, selLocalParams);
+        let localId;
 
-    if (localRes.rows.length) {
-      localId = localRes.rows[0].local_id;
-    } else {
-      if (!hasCoords) {
-        throw new Error(
-          "Latitude e longitude são obrigatórias para criar um novo local."
-        );
-      }
-      const insLocalSql = `
+        if (localRes.rows.length) {
+            localId = localRes.rows[0].local_id;
+        } else {
+            if (!hasCoords) {
+                throw new Error(
+                    "Latitude e longitude são obrigatórias para criar um novo local."
+                );
+            }
+            const insLocalSql = `
         insert into t_local (
           local_municipio_id, local_estado, local_bairro, local_rua,
           local_complemento, location
         ) values ($1,$2,$3,$4,$5, ST_SetSRID(ST_MakePoint($6,$7),4326)::geography)
         returning local_id
       `;
-      const insLocalParams = [
-        data.local?.local_municipio_id,
-        data.local?.local_estado,
-        data.local?.local_bairro,
-        data.local?.local_rua,
-        data.local?.local_complemento || null,
-        data.local?.local_longitude,
-        data.local?.local_latitude,
-      ];
-      const insLocalRes = await client.query(insLocalSql, insLocalParams);
-      localId = insLocalRes.rows[0].local_id;
-    }
+            const insLocalParams = [
+                data.local?.local_municipio_id,
+                data.local?.local_estado,
+                data.local?.local_bairro,
+                data.local?.local_rua,
+                data.local?.local_complemento || null,
+                data.local?.local_longitude,
+                data.local?.local_latitude,
+            ];
+            const insLocalRes = await client.query(insLocalSql, insLocalParams);
+            localId = insLocalRes.rows[0].local_id;
+        }
 
-    const insOcSql = `
+        const insOcSql = `
       insert into t_ocorrencia (
         ocorrencia_user_id,
         ocorrencia_anonima,
@@ -75,47 +75,41 @@ const createOcorrencia = async (data) => {
       values ($1,$2,$3,$4,1,$5,$6)
       returning ocorrencia_id, ocorrencia_protocolo, ocorrencia_titulo, ocorrencia_descricao
     `;
-    const insOcParams = [
-      data.ocorrencia_user_id,
-      data.ocorrencia_anonima ?? false,
-      data.ocorrencia_titulo,
-      data.ocorrencia_descricao,
-      data.ocorrencia_prioridade ?? 2,
-      localId,
-    ];
-    const ocorrenciaRes = await client.query(insOcSql, insOcParams);
-    const ocorrencia = ocorrenciaRes.rows[0];
+        const insOcParams = [
+            data.ocorrencia_user_id,
+            data.ocorrencia_anonima ?? false,
+            data.ocorrencia_titulo,
+            data.ocorrencia_descricao,
+            data.ocorrencia_prioridade ?? 2,
+            localId,
+        ];
+        const ocorrenciaRes = await client.query(insOcSql, insOcParams);
+        const ocorrencia = ocorrenciaRes.rows[0];
 
-    const histSql = `
-      insert into t_ocorrencia_status_historico (ocorrencia_id, ocorrencia_status_id)
-      values ($1, $2)
-    `;
-    await client.query(histSql, [ocorrencia.ocorrencia_id, 1]);
-
-    if (Array.isArray(data.files) && data.files.length) {
-      const insImgSql = `
+        if (Array.isArray(data.files) && data.files.length) {
+            const insImgSql = `
         insert into t_ocorrencia_imagem (ocorrencia_id, ocorrencia_imagem_url)
         values ($1, $2)
         returning ocorrencia_imagem_id, ocorrencia_imagem_url
       `;
-      for (const f of data.files) {
-        const url = toPublicUrl(f);
-        await client.query(insImgSql, [ocorrencia.ocorrencia_id, url]);
-      }
-    }
+            for (const f of data.files) {
+                const url = toPublicUrl(f);
+                await client.query(insImgSql, [ocorrencia.ocorrencia_id, url]);
+            }
+        }
 
-    await client.query("COMMIT");
-    return ocorrencia;
-  } catch (error) {
-    await client.query("ROLLBACK");
-    throw error;
-  } finally {
-    client.release();
-  }
+        await client.query("COMMIT");
+        return ocorrencia;
+    } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+    } finally {
+        client.release();
+    }
 };
 
 const getOcorrenciaById = async (ocorrencia_id) => {
-  const sql = `
+    const sql = `
     select 
       o.ocorrencia_id,
       o.ocorrencia_user_id,
@@ -158,12 +152,12 @@ const getOcorrenciaById = async (ocorrencia_id) => {
       u.user_username, m.municipio_nome, l.local_estado, l.local_bairro,
       l.local_rua, l.local_complemento, l.location
   `;
-  const result = await db.query(sql, [ocorrencia_id]);
-  return result.rows.length ? result.rows[0] : null;
+    const result = await db.query(sql, [ocorrencia_id]);
+    return result.rows.length ? result.rows[0] : null;
 };
 
 const getOcorrenciaByUser = async (user_id) => {
-  const sql = `
+    const sql = `
     with imgs as (
       select
         i.ocorrencia_id,
@@ -194,96 +188,91 @@ const getOcorrenciaByUser = async (user_id) => {
       and o.ocorrencia_excluida = false
     order by o.ocorrencia_data desc
   `;
-  const result = await db.query(sql, [user_id]);
-  return result.rows.length ? result.rows : null;
+    const result = await db.query(sql, [user_id]);
+    return result.rows.length ? result.rows : null;
 };
 
 const deleteOcorrencia = async (ocorrencia_id) => {
-  const sql = `
+    const sql = `
     update t_ocorrencia
       set ocorrencia_excluida = true
     where ocorrencia_id = $1
   `;
-  await db.query(sql, [ocorrencia_id]);
+    await db.query(sql, [ocorrencia_id]);
 };
 
-const updateOcorrencia = async (ocorrencia_id, data) => {
-  const client = await db.getClient();
-  try {
-    await client.query("BEGIN");
+const updateOcorrencia = async (ocorrencia_id, data, { userId } = {}) => {
+    const client = await db.getClient();
+    try {
+        await client.query("BEGIN");
 
-    const allowedFields = [
-      "ocorrencia_titulo",
-      "ocorrencia_descricao",
-      "ocorrencia_status",
-      "ocorrencia_prioridade",
-      "ocorrencia_anonima",
-      "ocorrencia_atribuida"
-    ];
+        await client.query(`select set_config('app.user_id', $1, true)`, [String(userId ?? '')]);
 
-    const setClause = [];
-    const values = [];
-    let index = 1;
+        const allowedFields = [
+            "ocorrencia_titulo",
+            "ocorrencia_descricao",
+            "ocorrencia_status",
+            "ocorrencia_prioridade",
+            "ocorrencia_anonima",
+            "ocorrencia_atribuida"
+        ];
 
-    for (const field of allowedFields) {
-      if (data[field] !== undefined) {
-        setClause.push(`${field} = $${index}`);
-        values.push(data[field]);
-        index++;
-      }
-    }
-    if (setClause.length === 0) {
-      await client.query("ROLLBACK");
-      return false;
-    }
+        const setClause = [];
+        const values = [];
+        let index = 1;
 
-    values.push(ocorrencia_id);
-    const updSql = `
+        for (const field of allowedFields) {
+            if (data[field] !== undefined) {
+                setClause.push(`${field} = $${index}`);
+                values.push(data[field]);
+                index++;
+            }
+        }
+
+        if (setClause.length === 0) {
+            await client.query("ROLLBACK");
+            return false;
+        }
+
+        values.push(ocorrencia_id);
+        const updSql = `
       update t_ocorrencia
       set ${setClause.join(", ")}
       where ocorrencia_id = $${index}
         and ocorrencia_excluida = false
       returning ocorrencia_id, ocorrencia_status
     `;
-    const updRes = await client.query(updSql, values);
-    const updated = updRes.rows.length ? updRes.rows[0] : null;
+        const updRes = await client.query(updSql, values);
+        const updated = updRes.rows.length ? updRes.rows[0] : null;
 
-    if (updated && data.ocorrencia_status !== undefined) {
-      const histSql = `
-        insert into t_ocorrencia_status_historico (ocorrencia_id, ocorrencia_status_id)
-        values ($1, $2)
-      `;
-      await client.query(histSql, [ocorrencia_id, data.ocorrencia_status]);
+        await client.query("COMMIT");
+        return updated || false;
+    } catch (e) {
+        await client.query("ROLLBACK");
+        throw e;
+    } finally {
+        client.release();
     }
-
-    await client.query("COMMIT");
-    return updated || false;
-  } catch (e) {
-    await client.query("ROLLBACK");
-    throw e;
-  } finally {
-    client.release();
-  }
 };
 
 const searchOcorrenciaByFieldValue = async (
-  field,
-  value,
-  orderField,
-  orderDir,
-  limit = 10,
-  offset = 0
+    field,
+    value,
+    orderField,
+    orderDir,
+    limit = 10,
+    offset = 0
 ) => {
-  const allowedFilterFields = ["status", "prioridade", "titulo", "descricao"];
-  const allowedOrderFilterFields = ["data", "status", "prioridade", "titulo"];
-  const allowedOrderDir = ["asc", "desc"];
+    const allowedFilterFields = ["status", "prioridade", "titulo", "descricao"];
+    const allowedOrderFilterFields = ["data", "status", "prioridade", "titulo"];
+    const allowedOrderDir = ["asc", "desc"];
 
-  if (!allowedFilterFields.includes(field)) field = "titulo";
-  if (!allowedOrderFilterFields.includes(orderField)) orderField = "data";
-  if (!orderDir || !allowedOrderDir.includes((orderDir || "").toLowerCase()))
-    orderDir = "desc";
+    if (!allowedFilterFields.includes(field)) field = "titulo";
+    if (!allowedOrderFilterFields.includes(orderField)) orderField = "data";
+    if (!orderDir || !allowedOrderDir.includes((orderDir || "").toLowerCase()))
+        orderDir = "desc";
 
-  const sql = `
+    const sql = `
     select
       o.ocorrencia_id,
       o.ocorrencia_protocolo,
@@ -322,24 +311,24 @@ const searchOcorrenciaByFieldValue = async (
     limit $5
     offset $6;
   `;
-  const params = [
-    field,
-    value || "",
-    orderField,
-    orderDir.toLowerCase(),
-    limit,
-    offset,
-  ];
-  const result = await db.query(sql, params);
-  return result.rows.length ? result.rows : false;
+    const params = [
+        field,
+        value || "",
+        orderField,
+        orderDir.toLowerCase(),
+        limit,
+        offset,
+    ];
+    const result = await db.query(sql, params);
+    return result.rows.length ? result.rows : false;
 };
 
 const getOcorrenciasByPrioridade = async (
-  prioridade_id,
-  limit = 10,
-  offset = 0
+    prioridade_id,
+    limit = 10,
+    offset = 0
 ) => {
-  const sql = `
+    const sql = `
     select
       o.ocorrencia_id,
       o.ocorrencia_protocolo,
@@ -356,12 +345,12 @@ const getOcorrenciasByPrioridade = async (
     order by o.ocorrencia_data desc
     limit $2 offset $3
   `;
-  const result = await db.query(sql, [prioridade_id, limit, offset]);
-  return result.rows;
+    const result = await db.query(sql, [prioridade_id, limit, offset]);
+    return result.rows;
 };
 
 const getOcorrenciasByStatus = async (status_id, limit = 10, offset = 0) => {
-  const sql = `
+    const sql = `
     select
       o.ocorrencia_id,
       o.ocorrencia_protocolo,
@@ -378,12 +367,12 @@ const getOcorrenciasByStatus = async (status_id, limit = 10, offset = 0) => {
     order by o.ocorrencia_data desc
     limit $2 offset $3
   `;
-  const result = await db.query(sql, [status_id, limit, offset]);
-  return result.rows;
+    const result = await db.query(sql, [status_id, limit, offset]);
+    return result.rows;
 };
 
 const searchOcorrenciasFullText = async (query, limit = 10, offset = 0) => {
-  const sql = `
+    const sql = `
     select
       o.ocorrencia_id,
       o.ocorrencia_protocolo,
@@ -400,34 +389,34 @@ const searchOcorrenciasFullText = async (query, limit = 10, offset = 0) => {
     order by o.ocorrencia_data desc
     limit $2 offset $3
   `;
-  const result = await db.query(sql, [query, limit, offset]);
-  return result.rows;
+    const result = await db.query(sql, [query, limit, offset]);
+    return result.rows;
 };
 
 const getOcorrenciasByDate = async (
-  from,
-  to,
-  orderDir = "desc",
-  limit = 10,
-  offset = 0
+    from,
+    to,
+    orderDir = "desc",
+    limit = 10,
+    offset = 0
 ) => {
-  const dir = (orderDir || "desc").toLowerCase() === "asc" ? "asc" : "desc";
+    const dir = (orderDir || "desc").toLowerCase() === "asc" ? "asc" : "desc";
 
-  const params = [];
-  let idx = 1;
-  let where = "o.ocorrencia_excluida = false";
+    const params = [];
+    let idx = 1;
+    let where = "o.ocorrencia_excluida = false";
 
-  if (from) {
-    where += ` and o.ocorrencia_data >= $${idx++}`;
-    params.push(from);
-  }
-  if (to) {
-    where += ` and o.ocorrencia_data <= $${idx++}`;
-    params.push(to);
-  }
-  params.push(limit, offset);
+    if (from) {
+        where += ` and o.ocorrencia_data >= $${idx++}`;
+        params.push(from);
+    }
+    if (to) {
+        where += ` and o.ocorrencia_data <= $${idx++}`;
+        params.push(to);
+    }
+    params.push(limit, offset);
 
-  const sql = `
+    const sql = `
     select
       o.ocorrencia_id,
       o.ocorrencia_protocolo,
@@ -443,36 +432,36 @@ const getOcorrenciasByDate = async (
     order by o.ocorrencia_data ${dir}
     limit $${idx++} offset $${idx}
   `;
-  const result = await db.query(sql, params);
-  return result.rows;
+    const result = await db.query(sql, params);
+    return result.rows;
 };
 
 const getOcorrenciasByLocal = async (
-  { municipio, bairro, rua } = {},
-  limit = 10,
-  offset = 0
+    { municipio, bairro, rua } = {},
+    limit = 10,
+    offset = 0
 ) => {
-  const clauses = ["o.ocorrencia_excluida = false", "l.local_excluido = false"];
-  const params = [];
-  let i = 1;
+    const clauses = ["o.ocorrencia_excluida = false", "l.local_excluido = false"];
+    const params = [];
+    let i = 1;
 
-  if (municipio) {
-    clauses.push(`m.municipio_nome ilike '%' || $${i++} || '%'`);
-    params.push(municipio);
-  }
-  if (bairro) {
-    clauses.push(`l.local_bairro ilike '%' || $${i++} || '%'`);
-    params.push(bairro);
-  }
-  if (rua) {
-    clauses.push(`l.local_rua ilike '%' || $${i++} || '%'`);
-    params.push(rua);
-  }
+    if (municipio) {
+        clauses.push(`m.municipio_nome ilike '%' || $${i++} || '%'`);
+        params.push(municipio);
+    }
+    if (bairro) {
+        clauses.push(`l.local_bairro ilike '%' || $${i++} || '%'`);
+        params.push(bairro);
+    }
+    if (rua) {
+        clauses.push(`l.local_rua ilike '%' || $${i++} || '%'`);
+        params.push(rua);
+    }
 
-  const where = clauses.length ? `where ${clauses.join(" and ")}` : "";
-  params.push(limit, offset);
+    const where = clauses.length ? `where ${clauses.join(" and ")}` : "";
+    params.push(limit, offset);
 
-  const sql = `
+    const sql = `
     select
       o.ocorrencia_id,
       o.ocorrencia_protocolo,
@@ -494,12 +483,12 @@ const getOcorrenciasByLocal = async (
     order by o.ocorrencia_data desc
     limit $${i++} offset $${i}
   `;
-  const result = await db.query(sql, params);
-  return result.rows;
+    const result = await db.query(sql, params);
+    return result.rows;
 };
 
 const getOcorrenciaBySetor = async (ocorrencia_atribuida) => {
-  const sql = `
+    const sql = `
     select 
       o.ocorrencia_id,
       o.ocorrencia_titulo,
@@ -524,46 +513,46 @@ const getOcorrenciaBySetor = async (ocorrencia_atribuida) => {
     where o.ocorrencia_atribuida = $1
       and o.ocorrencia_excluida = false
   `;
-  const result = await db.query(sql, [ocorrencia_atribuida]);
-  return result.rows.length ? result.rows[0] : null;
+    const result = await db.query(sql, [ocorrencia_atribuida]);
+    return result.rows.length ? result.rows[0] : null;
 };
 
 const getOcorrenciasProximas = async ({
-  lat,
-  lng,
-  radius_km = 3,
-  status_id = null,
-  prioridade_id = null,
-  com_imagens = false,
-  limit = 20,
-  offset = 0,
+    lat,
+    lng,
+    radius_km = 3,
+    status_id = null,
+    prioridade_id = null,
+    com_imagens = false,
+    limit = 20,
+    offset = 0,
 }) => {
-  // saneamento básico
-  const R = Math.max(0.1, Math.min(Number(radius_km) || 3, 50));
-  const LIMIT = Math.max(1, Math.min(Number(limit) || 20, 100));
-  const OFFSET = Math.max(0, Number(offset) || 0);
+    // saneamento básico
+    const R = Math.max(0.1, Math.min(Number(radius_km) || 3, 50));
+    const LIMIT = Math.max(1, Math.min(Number(limit) || 20, 100));
+    const OFFSET = Math.max(0, Number(offset) || 0);
 
-  const params = [lng, lat, R * 1000];
-  let i = params.length;
+    const params = [lng, lat, R * 1000];
+    let i = params.length;
 
-  const where = [
-    "o.ocorrencia_excluida = false",
-    "ST_DWithin(l.location, ST_SetSRID(ST_MakePoint($1,$2),4326)::geography, $3)",
-  ];
+    const where = [
+        "o.ocorrencia_excluida = false",
+        "ST_DWithin(l.location, ST_SetSRID(ST_MakePoint($1,$2),4326)::geography, $3)",
+    ];
 
-  if (status_id != null) {
-    params.push(Number(status_id));
-    i++;
-    where.push(`o.ocorrencia_status = $${i}`);
-  }
+    if (status_id != null) {
+        params.push(Number(status_id));
+        i++;
+        where.push(`o.ocorrencia_status = $${i}`);
+    }
 
-  if (prioridade_id != null) {
-    params.push(Number(prioridade_id));
-    i++;
-    where.push(`o.ocorrencia_prioridade = $${i}`);
-  }
+    if (prioridade_id != null) {
+        params.push(Number(prioridade_id));
+        i++;
+        where.push(`o.ocorrencia_prioridade = $${i}`);
+    }
 
-  const imgsCTE = `
+    const imgsCTE = `
     with imgs as (
       select
         i.ocorrencia_id,
@@ -579,7 +568,7 @@ const getOcorrenciasProximas = async ({
     )
   `;
 
-  const sql = `
+    const sql = `
     ${imgsCTE}
     select
       o.ocorrencia_id,
@@ -610,84 +599,83 @@ const getOcorrenciasProximas = async ({
     limit ${LIMIT} offset ${OFFSET}
   `;
 
-  const { rows } = await db.query(sql, params);
-  return rows;
+    const { rows } = await db.query(sql, params);
+    return rows;
 };
 
 const listOcorrenciasRoleAware = async ({
-  q,
-  status_id,
-  prioridade_id,
-  com_imagens,
-  orderDir = "desc",
-  limit = 20,
-  offset = 0,
-  role,
-  userId,
-  nearbyLat = null,
-  nearbyLng = null,
-  nearbyRadiusM = null,
+    q,
+    status_id,
+    prioridade_id,
+    com_imagens,
+    orderDir = "desc",
+    limit = 20,
+    offset = 0,
+    role,
+    userId,
+    nearbyLat = null,
+    nearbyLng = null,
+    nearbyRadiusM = null,
 }) => {
-  const params = [];
-  let i = 1;
-  const where = ["o.ocorrencia_excluida = false"];
+    const params = [];
+    let i = 1;
+    const where = ["o.ocorrencia_excluida = false"];
 
-  if (q && q.trim()) {
-    where.push(
-      `(o.ocorrencia_titulo ILIKE $${i} OR o.ocorrencia_protocolo ILIKE $${
-        i + 1
-      })`
-    );
-    params.push(`%${q}%`, `%${q}%`);
-    i += 2;
-  }
-  if (Number.isInteger(status_id)) {
-    where.push(`o.ocorrencia_status = $${i}`);
-    params.push(status_id);
-    i++;
-  }
-  if (Number.isInteger(prioridade_id)) {
-    where.push(`o.ocorrencia_prioridade = $${i}`);
-    params.push(prioridade_id);
-    i++;
-  }
-
-  if (role === 2) {
-  } else if (role === 3 || role === 4) {
-    where.push(`o.ocorrencia_atribuida = $${i}`);
-    params.push(role);
-    i++;
-  } else {
-    const conds = [`o.ocorrencia_user_id = $${i}`];
-    params.push(userId);
-    i++;
-    if (
-      nearbyLat !== null &&
-      nearbyLng !== null &&
-      nearbyRadiusM !== null &&
-      Number.isFinite(Number(nearbyLat)) &&
-      Number.isFinite(Number(nearbyLng)) &&
-      Number.isFinite(Number(nearbyRadiusM)) &&
-      Number(nearbyRadiusM) > 0
-    ) {
-      const latParam = `$${i}`;
-      const lngParam = `$${i + 1}`;
-      const radParam = `$${i + 2}`;
-      conds.push(
-        `ST_DWithin(l.location, ST_SetSRID(ST_MakePoint(${lngParam}, ${latParam}),4326)::geography, ${radParam})`
-      );
-      params.push(Number(nearbyLat), Number(nearbyLng), Number(nearbyRadiusM));
-      i += 3;
+    if (q && q.trim()) {
+        where.push(
+            `(o.ocorrencia_titulo ILIKE $${i} OR o.ocorrencia_protocolo ILIKE $${i + 1
+            })`
+        );
+        params.push(`%${q}%`, `%${q}%`);
+        i += 2;
     }
-    where.push(`(${conds.join(" OR ")})`);
-  }
+    if (Number.isInteger(status_id)) {
+        where.push(`o.ocorrencia_status = $${i}`);
+        params.push(status_id);
+        i++;
+    }
+    if (Number.isInteger(prioridade_id)) {
+        where.push(`o.ocorrencia_prioridade = $${i}`);
+        params.push(prioridade_id);
+        i++;
+    }
 
-  const order = orderDir === "asc" ? "asc" : "desc";
-  const having = com_imagens
-    ? "HAVING COUNT(img.ocorrencia_imagem_id) > 0"
-    : "";
+    if (role === 2) {
+    } else if (role === 3 || role === 4) {
+        where.push(`o.ocorrencia_atribuida = $${i}`);
+        params.push(role);
+        i++;
+    } else {
+        const conds = [`o.ocorrencia_user_id = $${i}`];
+        params.push(userId);
+        i++;
+        if (
+            nearbyLat !== null &&
+            nearbyLng !== null &&
+            nearbyRadiusM !== null &&
+            Number.isFinite(Number(nearbyLat)) &&
+            Number.isFinite(Number(nearbyLng)) &&
+            Number.isFinite(Number(nearbyRadiusM)) &&
+            Number(nearbyRadiusM) > 0
+        ) {
+            const latParam = `$${i}`;
+            const lngParam = `$${i + 1}`;
+            const radParam = `$${i + 2}`;
+            conds.push(
+                `ST_DWithin(l.location, ST_SetSRID(ST_MakePoint(${lngParam}, ${latParam}),4326)::geography, ${radParam})`
+            );
+            params.push(Number(nearbyLat), Number(nearbyLng), Number(nearbyRadiusM));
+            i += 3;
+        }
+        where.push(`(${conds.join(" OR ")})`);
+    }
 
-  const sql = `
+    const order = orderDir === "asc" ? "asc" : "desc";
+    const having = com_imagens
+        ? "HAVING COUNT(img.ocorrencia_imagem_id) > 0"
+        : "";
+
+    const sql = `
     SELECT
       COUNT(*) OVER() AS total_count,
       o.ocorrencia_id,
@@ -717,25 +705,25 @@ const listOcorrenciasRoleAware = async ({
     ORDER BY o.ocorrencia_data ${order}
     LIMIT $${i} OFFSET $${i + 1}
   `;
-  params.push(limit, offset);
-  
-  const result = await db.query(sql, params);
-  return result.rows;
+    params.push(limit, offset);
+
+    const result = await db.query(sql, params);
+    return result.rows;
 };
 
 module.exports = {
-  createOcorrencia,
-  getOcorrenciaById,
-  getOcorrenciaByUser,
-  deleteOcorrencia,
-  updateOcorrencia,
-  searchOcorrenciaByFieldValue,
-  getOcorrenciasByPrioridade,
-  getOcorrenciasByStatus,
-  searchOcorrenciasFullText,
-  getOcorrenciasByDate,
-  getOcorrenciasByLocal,
-  getOcorrenciaBySetor,
-  getOcorrenciasProximas,
-  listOcorrenciasRoleAware,
+    createOcorrencia,
+    getOcorrenciaById,
+    getOcorrenciaByUser,
+    deleteOcorrencia,
+    updateOcorrencia,
+    searchOcorrenciaByFieldValue,
+    getOcorrenciasByPrioridade,
+    getOcorrenciasByStatus,
+    searchOcorrenciasFullText,
+    getOcorrenciasByDate,
+    getOcorrenciasByLocal,
+    getOcorrenciaBySetor,
+    getOcorrenciasProximas,
+    listOcorrenciasRoleAware,
 };

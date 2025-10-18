@@ -8,28 +8,29 @@ const port = 3000;
 
 app.use(express.json());
 
-app.use(
-  cors({
-    origin: [/^http:\/\/localhost:\d+$/, /^http:\/\/127\.0\.0\.1:\d+$/, "http://api_app:3000"],
+app.use(cors({
+    origin: [
+        /^http:\/\/localhost:\d+$/,
+        /^http:\/\/127\.0\.0\.1:\d+$/,
+        /^https:\/\/[a-z0-9-]+\.brs\.devtunnels\.ms(:\d+)?$/
+    ],
     credentials: true,
-  })
-);
+}))
 
 app.use(cookieParser());
 
 if ((process.env.STORAGE_DRIVER || "local") === "local") {
-  const uploadDir =
-    process.env.UPLOAD_DIR || path.join(__dirname, "../uploads");
-  app.use("/uploads", express.static(uploadDir, { maxAge: "7d" }));
+    const uploadDir =
+        process.env.UPLOAD_DIR || path.join(__dirname, "../uploads");
+    app.use("/uploads", express.static(uploadDir, { maxAge: "7d" }));
 }
-
+app.set('trust proxy', 1)
 require("./services/swagger");
 require("./routes")(app);
 
 app.use("/v1/docs", express.static("./src/views"));
 app.use("/docs/swagger.yaml", express.static("./src/docs/swagger.yaml"));
 
-app.listen(port),
-  () => {
+app.listen(port, () => {
     console.log(`Server running on port ${port}`);
-  };
+});
