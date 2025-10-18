@@ -15,10 +15,10 @@
                 <q-tabs v-model="tab" dense active-color="green-9" indicator-color="green-9" class="text-grey-7">
                     <q-tab name="detalhe" label="Detalhe" />
                     <q-tab name="historico" label="Histórico" />
+                    <q-tab name="comentarios" :label="`Comentários (${comentTotal})`" />
                 </q-tabs>
                 <q-separator />
 
-                <!-- DETALHE -->
                 <div v-show="tab === 'detalhe'">
                     <q-card-section class="row items-center q-col-gutter-sm">
                         <div class="col">
@@ -244,6 +244,77 @@
                     </q-card-section>
                 </div>
 
+                <div v-show="tab === 'comentarios'">
+                    <q-card-section>
+                        <div class="row items-center q-col-gutter-sm q-mb-sm">
+                            <div class="col">
+                                <div class="text-bold text-grey-8">Comentários</div>
+                                <div class="text-caption text-grey-6">{{ comentTotal }} comentário(s)</div>
+                            </div>
+                            <div class="col-auto">
+                                <q-btn dense flat icon="refresh" :loading="comentLoading" @click="reloadComentarios" />
+                            </div>
+                        </div>
+
+                        <q-card flat bordered class="q-mb-md">
+                            <q-card-section class="q-gutter-sm">
+                                <q-input v-model="novoComentarioTexto" type="textarea" autogrow outlined
+                                    :disable="comentSaving"
+                                    placeholder="Escreva seu comentário... (Ctrl+Enter para enviar)"
+                                    @keyup.ctrl.enter="enviarComentario" />
+                                <div class="row items-center q-gutter-sm">
+                                    <q-btn label="Enviar" color="green-9" :loading="comentSaving"
+                                        :disable="!novoComentarioTexto || !novoComentarioTexto.trim()"
+                                        @click="enviarComentario" />
+                                    <q-btn flat label="Limpar" :disable="comentSaving || !novoComentarioTexto"
+                                        @click="novoComentarioTexto = ''" />
+                                </div>
+                            </q-card-section>
+                        </q-card>
+
+                        <q-inner-loading :showing="comentLoading"><q-spinner size="32px" /></q-inner-loading>
+
+                        <q-list separator v-if="comentarios.length">
+                            <q-item v-for="c in comentarios" :key="c.comentario_id">
+                                <q-item-section avatar>
+                                    <q-avatar color="primary" text-color="white" size="32px">
+                                        {{ (c.comentario_user_username || c.comentario_user_nome ||
+                                            '?').slice(0, 1).toUpperCase() }}
+                                    </q-avatar>
+                                </q-item-section>
+
+                                <q-item-section>
+                                    <q-item-label class="row items-center q-gutter-sm">
+                                        <span class="text-weight-medium">{{ c.comentario_user_nome ||
+                                            c.comentario_user_username
+                                            }}</span>
+                                    </q-item-label>
+                                    <q-item-label caption>
+                                        {{ formatComentDate(c.comentario_data) }}
+                                    </q-item-label>
+                                    <q-item-label class="q-mt-sm">
+                                        <div style="white-space: pre-wrap">{{ c.comentario_texto }}</div>
+                                    </q-item-label>
+                                </q-item-section>
+
+                                <q-item-section side top v-if="Number(c.comentario_user_id) === Number(currentUserId)">
+                                    <q-btn size="sm" flat icon="delete" color="negative"
+                                        @click="softExcluirComentario(c.comentario_id)" />
+                                </q-item-section>
+                            </q-item>
+                        </q-list>
+
+                        <div v-else class="text-grey-6">Nenhum comentário por aqui…</div>
+
+                        <div class="row justify-center q-mt-md" v-if="comentarios.length < comentTotal">
+                            <q-btn flat :loading="comentLoading" label="Carregar mais"
+                                @click="carregarMaisComentarios" />
+                            <div class="text-caption q-ml-sm">
+                                {{ Math.min(comentarios.length, comentTotal) }} / {{ comentTotal }}
+                            </div>
+                        </div>
+                    </q-card-section>
+                </div>
             </template>
         </q-card>
     </q-page>
@@ -255,6 +326,7 @@ import { useRoute } from 'vue-router'
 import { copyToClipboard, Notify, useQuasar, date } from 'quasar'
 import { useOcorrenciaDetalheStore } from 'src/stores/ocorrenciaDetalhe'
 import { useOcorrenciaHistoricoStore } from 'src/stores/ocorrenciaHistorico'
+import { useOcorrenciaComentarioStore } from 'src/stores/ocorrenciaComentario'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
@@ -272,14 +344,12 @@ watch(() => route.params.id, (id) => { if (id) store.carregar(id, { force: true 
 const tab = ref('detalhe')
 
 const histStore = useOcorrenciaHistoricoStore()
-const storeHistList  = computed(() => histStore.list(route.params.id))
+const storeHistList = computed(() => histStore.list(route.params.id))
 const storeHistTotal = computed(() => histStore.total(route.params.id))
-const histLoading    = computed(() => histStore.loading)
+const histLoading = computed(() => histStore.loading)
 const historico = computed(() => (storeHistList.value || []).filter(h => h.entidade === 'status'))
 
-function formatHistDate(v) {
-    return v ? date.formatDate(v, 'DD/MM/YYYY HH:mm') : '-'
-}
+function formatHistDate(v) { return v ? date.formatDate(v, 'DD/MM/YYYY HH:mm') : '-' }
 async function carregarHistorico(force = false) {
     await histStore.carregar(route.params.id, { limit: 20, offset: 0, force })
 }
@@ -297,80 +367,67 @@ watch(tab, async (t) => {
 const filtro = reactive({ entidade: null })
 
 const entidadeOptions = [
-  { label: 'Status', value: 'status' },
-  { label: 'Prioridade', value: 'prioridade' },
-  { label: 'Atribuição', value: 'atribuicao' },
-  { label: 'Título', value: 'titulo' },
-  { label: 'Descrição', value: 'descricao' },
-  { label: 'Imagem', value: 'imagem' },
-  { label: 'Comentário', value: 'comentario' },
-  { label: 'Local', value: 'local' },
-  { label: 'Anônima', value: 'anonima' },
-  { label: 'Excluída', value: 'excluida' },
+    { label: 'Status', value: 'status' },
+    { label: 'Prioridade', value: 'prioridade' },
+    { label: 'Atribuição', value: 'atribuicao' },
+    { label: 'Título', value: 'titulo' },
+    { label: 'Descrição', value: 'descricao' },
+    { label: 'Imagem', value: 'imagem' },
+    { label: 'Comentário', value: 'comentario' },
+    { label: 'Local', value: 'local' },
+    { label: 'Anônima', value: 'anonima' },
+    { label: 'Excluída', value: 'excluida' },
 ]
 
 const historicoFiltrado = computed(() =>
-  filtro.entidade ? (storeHistList.value || []).filter(h => h.entidade === filtro.entidade) : (storeHistList.value || [])
+    filtro.entidade ? (storeHistList.value || []).filter(h => h.entidade === filtro.entidade) : (storeHistList.value || [])
 )
 
 function entidadeColor(ent) {
-  const map = {
-    status: 'green-7', prioridade: 'orange-7', atribuicao: 'indigo-6',
-    titulo: 'blue-6', descricao: 'cyan-7', imagem: 'purple-6',
-    comentario: 'teal-6', local: 'brown-6', anonima: 'deep-purple-5',
-    excluida: 'grey-7', ocorrencia: 'primary',
-  }
-  return map[ent] || 'grey-6'
+    const map = {
+        status: 'green-7', prioridade: 'orange-7', atribuicao: 'indigo-6',
+        titulo: 'blue-6', descricao: 'cyan-7', imagem: 'purple-6',
+        comentario: 'teal-6', local: 'brown-6', anonima: 'deep-purple-5',
+        excluida: 'grey-7', ocorrencia: 'primary',
+    }
+    return map[ent] || 'grey-6'
 }
 function entidadeIcon(ent) {
-  const map = {
-    status: 'flag', prioridade: 'priority_high', atribuicao: 'group',
-    titulo: 'title', descricao: 'notes', imagem: 'photo',
-    comentario: 'chat', local: 'place', anonima: 'visibility_off',
-    excluida: 'delete_outline', ocorrencia: 'info',
-  }
-  return map[ent] || 'history'
+    const map = {
+        status: 'flag', prioridade: 'priority_high', atribuicao: 'group',
+        titulo: 'title', descricao: 'notes', imagem: 'photo',
+        comentario: 'chat', local: 'place', anonima: 'visibility_off',
+        excluida: 'delete_outline', ocorrencia: 'info',
+    }
+    return map[ent] || 'history'
 }
 function labelEntidade(ent) {
-  const map = Object.fromEntries(entidadeOptions.map(e => [e.value, e.label]))
-  return map[ent] || ent
+    const map = Object.fromEntries(entidadeOptions.map(e => [e.value, e.label]))
+    return map[ent] || ent
 }
 function labelAcao(acao) {
-  const map = { create: 'Criado', update: 'Atualizado', delete: 'Excluído', attach: 'Anexado', detach: 'Desanexado' }
-  return map[acao] || acao
+    const map = { create: 'Criado', update: 'Atualizado', delete: 'Excluído', attach: 'Anexado', detach: 'Desanexado' }
+    return map[acao] || acao
 }
 function acaoIcon(h) {
-  const map = { create: 'add', update: 'edit', delete: 'delete', attach: 'link', detach: 'link_off' }
-  return map[h.acao] || entidadeIcon(h.entidade)
+    const map = { create: 'add', update: 'edit', delete: 'delete', attach: 'link', detach: 'link_off' }
+    return map[h.acao] || entidadeIcon(h.entidade)
 }
 function fmtVal(v) {
-  if (v == null || v === '') return '—'
-  const num = Number(v)
-  return Number.isFinite(num) ? num : String(v)
+    if (v == null || v === '') return '—'
+    const num = Number(v)
+    return Number.isFinite(num) ? num : String(v)
 }
 function usuarioFmt(h) {
-  const idPart = h?.changed_by != null ? `#${h.changed_by}` : '—'
-  const namePart = h?.changed_by_username ? ` — ${h.changed_by_username}` : ''
-  return `Usuário: ${idPart}${namePart}`
+    const idPart = h?.changed_by != null ? `#${h.changed_by}` : '—'
+    const namePart = h?.changed_by_username ? ` — ${h.changed_by_username}` : ''
+    return `Usuário: ${idPart}${namePart}`
 }
 
-function prioridadeChipColor(id) {
-  const m = { 4:'red-7', 1:'deep-orange-7', 2:'primary', 3:'grey-7' }
-  return m[Number(id)] || 'grey-6'
-}
-function atribuidaChipColor(id) {
-  const m = { 1:'grey-7', 2:'primary', 3:'deep-orange-6', 4:'indigo-6' }
-  return m[Number(id)] || 'grey-6'
-}
-function labelPrioridade(id) {
-  const map = {1:'Alta',2:'Normal',3:'Baixa',4:'Urgente'}
-  return map[Number(id)] || '—'
-}
-function labelAtribuida(id) {
-  const map = {1:'Cidadão',2:'Administrador',3:'DMER',4:'DOSU'}
-  return map[Number(id)] || '—'
-}
-
+function prioridadeChipColor(id) { const m = { 4: 'red-7', 1: 'deep-orange-7', 2: 'primary', 3: 'grey-7' }; return m[Number(id)] || 'grey-6' }
+function atribuidaChipColor(id) { const m = { 1: 'grey-7', 2: 'primary', 3: 'deep-orange-6', 4: 'indigo-6' }; return m[Number(id)] || 'grey-6' }
+function labelPrioridade(id) { const map = { 1: 'Alta', 2: 'Normal', 3: 'Baixa', 4: 'Urgente' }; return map[Number(id)] || '—' }
+function labelAtribuida(id) { const map = { 1: 'Cidadão', 2: 'Administrador', 3: 'DMER', 4: 'DOSU' }; return map[Number(id)] || '—' }
 
 function fmtBR(v) {
     if (!v) return ''
@@ -393,7 +450,7 @@ const STATUS_OPTIONS = [
 ]
 const STATUS_BY_ID = Object.fromEntries(STATUS_OPTIONS.map(o => [o.value, o.label]))
 function labelStatus(id) { return STATUS_BY_ID[Number(id)] || '—' }
-function statusChipColor(id) { const map = { 1: 'primary', 2: 'indigo-6', 3: 'info', 4: 'positive', 5: 'green-8' }; return map[Number(id)] || 'grey-6' }
+function statusChipColor(id) { const m = { 1: 'primary', 2: 'indigo-6', 3: 'info', 4: 'positive', 5: 'green-8' }; return m[Number(id)] || 'grey-6' }
 
 const mapEl = ref(null)
 let map = null
@@ -473,6 +530,77 @@ const carouselHeight = computed(() => {
 
 onMounted(async () => {
     if (tab.value === 'historico') await carregarHistorico(true)
+})
+
+const comentStore = useOcorrenciaComentarioStore()
+
+const comentarios = computed(() => comentStore.list(route.params.id))
+const comentTotal = computed(() => comentStore.total(route.params.id))
+const comentLoading = computed(() => comentStore.loading)
+const comentSaving = computed(() => comentStore.saving)
+
+const novoComentarioTexto = ref('')
+
+function formatComentDate(v) { return v ? date.formatDate(v, 'DD/MM/YYYY HH:mm') : '-' }
+
+async function carregarComentarios(force = false) {
+    await comentStore.carregar(route.params.id, {
+        includeExcluidos: false,
+        limit: 20,
+        offset: 0,
+        force,
+    })
+}
+async function carregarMaisComentarios() {
+    const st = comentStore.pageState(route.params.id)
+    await comentStore.paginar(route.params.id, {
+        includeExcluidos: false,
+        limit: st.limit ?? 20,
+        offset: (st.offset ?? 0) + (st.limit ?? 20),
+    })
+}
+async function reloadComentarios() {
+    await carregarComentarios(true)
+}
+
+async function enviarComentario() {
+    const texto = (novoComentarioTexto.value || '').trim()
+    if (!texto) return
+    if (!Number.isInteger(currentUserId)) {
+        Notify.create({ type: 'negative', message: 'Usuário não identificado.' })
+        return
+    }
+    try {
+        await comentStore.adicionar(route.params.id, {
+            comentario_user_id: Number(currentUserId),
+            comentario_texto: texto,
+        })
+        novoComentarioTexto.value = ''
+        reloadComentarios()
+    } catch (e) {
+        Notify.create({ type: 'negative', message: e?.message || 'Erro ao enviar comentário' })
+    }
+}
+
+async function softExcluirComentario(comentarioId) {
+    try {
+        await comentStore.softRemover(route.params.id, comentarioId)
+        Notify.create({ type: 'warning', message: 'Comentário marcado como excluído' })
+    } catch (e) {
+        Notify.create({ type: 'negative', message: e?.message || 'Falha ao excluir' })
+    }
+}
+
+watch(tab, async (t) => {
+    if (t === 'comentarios' && comentarios.value.length === 0) {
+        await carregarComentarios(true)
+    }
+})
+
+watch(() => route.params.id, async (newId, oldId) => {
+    if (newId && newId !== oldId) {
+        await carregarComentarios(true)
+    }
 })
 </script>
 
@@ -561,5 +689,26 @@ onMounted(async () => {
     padding: 4px 12px;
     font-weight: 700;
     font-size: 12px;
+}
+
+.comentarios-input {
+    background: #fff;
+    border-radius: 10px;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    padding: 12px;
+}
+
+.comentarios-list :deep(.q-item) {
+    border-radius: 10px;
+    transition: background-color 0.15s;
+}
+
+.comentarios-list :deep(.q-item:hover) {
+    background-color: #f9f9fa;
+}
+
+.comentarios-list :deep(.q-avatar) {
+    font-weight: 700;
+    font-size: 14px;
 }
 </style>

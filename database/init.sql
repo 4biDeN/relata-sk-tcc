@@ -1,4 +1,5 @@
-begin;
+begin
+;
 
 set
     time zone 'America/Sao_Paulo';
@@ -530,14 +531,16 @@ delete
     on t_ocorrencia_imagem for each row execute function fn_oc_imagem_audit_del();
 
 create
-or replace function fn_oc_coment_audit_ins() returns trigger language plpgsql as $$ begin
+or replace function public.fn_oc_coment_audit_ins() returns trigger language plpgsql as $$ begin
     insert into
         t_ocorrencia_historico (
             ocorrencia_id,
             acao,
             entidade,
-            entidade_id,
+            campo,
+            valor_anterior,
             valor_novo,
+            entidade_id,
             changed_by,
             meta
         )
@@ -546,8 +549,10 @@ or replace function fn_oc_coment_audit_ins() returns trigger language plpgsql as
             new .comentario_ocorrencia_id,
             'attach',
             'comentario',
-            new .comentario_id,
+            null,
+            'false',
             new .comentario_texto,
+            new .comentario_id,
             fn_audit_get_user(),
             jsonb_build_object('preview', left(new .comentario_texto, 120))
         );

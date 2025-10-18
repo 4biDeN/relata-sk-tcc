@@ -1,9 +1,10 @@
 const db = require("../configs/pg");
 
-const appendOcorrenciaHistorico = async (data) => {
+const appendOcorrenciaHistorico = async (data, { userId } = {}) => {
     const client = await db.getClient();
     try {
         await client.query("BEGIN");
+        await client.query(`select set_config('app.user_id', $1, true)`, [String(userId ?? '')]);
 
         const sel = `
       select
@@ -26,13 +27,9 @@ const appendOcorrenciaHistorico = async (data) => {
         ]);
         const last = lastRes.rows[0];
 
-        const sameAction =
-            last && last.acao === data.acao && last.entidade === data.entidade;
-        const sameField =
-            last &&
-            (last.campo ?? "") === (data.campo ?? "");
-        const sameNewValue =
-            last && (last.valor_novo ?? "") === (data.valor_novo ?? "");
+        const sameAction = last && last.acao === data.acao && last.entidade === data.entidade;
+        const sameField = last && (last.campo ?? "") === (data.campo ?? "");
+        const sameNewValue = last && (last.valor_novo ?? "") === (data.valor_novo ?? "");
 
         if (sameAction && sameField && sameNewValue) {
             await client.query("COMMIT");
@@ -68,7 +65,7 @@ const appendOcorrenciaHistorico = async (data) => {
             data.valor_anterior ?? null,
             data.valor_novo ?? null,
             data.entidade_id ?? null,
-            data.changed_by ?? null,
+            data.changed_by ?? (userId != null ? Number(userId) : null),
             data.changed_at ?? null,
             data.meta ?? null,
         ];
@@ -104,55 +101,29 @@ const getOcorrenciaHistoricoByOcorrencia = async (ocorrencia_id, limit = 20, off
     return { rows, total };
 };
 
-const updateOcorrenciaHistorico = async (id, data) => {
+const updateOcorrenciaHistorico = async (id, data, { userId } = {}) => {
     const client = await db.getClient();
     try {
         await client.query("BEGIN");
+        await client.query(`select set_config('app.user_id', $1, true)`, [String(userId ?? '')]);
 
         const fields = [];
         const values = [];
         let idx = 1;
 
-        if (data.ocorrencia_id !== undefined) {
-            fields.push(`ocorrencia_id = $${idx++}`);
-            values.push(data.ocorrencia_id);
-        }
-        if (data.acao !== undefined) {
-            fields.push(`acao = $${idx++}`);
-            values.push(data.acao);
-        }
-        if (data.entidade !== undefined) {
-            fields.push(`entidade = $${idx++}`);
-            values.push(data.entidade);
-        }
-        if (data.campo !== undefined) {
-            fields.push(`campo = $${idx++}`);
-            values.push(data.campo);
-        }
-        if (data.valor_anterior !== undefined) {
-            fields.push(`valor_anterior = $${idx++}`);
-            values.push(data.valor_anterior);
-        }
-        if (data.valor_novo !== undefined) {
-            fields.push(`valor_novo = $${idx++}`);
-            values.push(data.valor_novo);
-        }
-        if (data.entidade_id !== undefined) {
-            fields.push(`entidade_id = $${idx++}`);
-            values.push(data.entidade_id);
-        }
-        if (data.changed_by !== undefined) {
+        if (data.ocorrencia_id !== undefined) { fields.push(`ocorrencia_id = $${idx++}`); values.push(data.ocorrencia_id); }
+        if (data.acao !== undefined) { fields.push(`acao = $${idx++}`); values.push(data.acao); }
+        if (data.entidade !== undefined) { fields.push(`entidade = $${idx++}`); values.push(data.entidade); }
+        if (data.campo !== undefined) { fields.push(`campo = $${idx++}`); values.push(data.campo); }
+        if (data.valor_anterior !== undefined) { fields.push(`valor_anterior = $${idx++}`); values.push(data.valor_anterior); }
+        if (data.valor_novo !== undefined) { fields.push(`valor_novo = $${idx++}`); values.push(data.valor_novo); }
+        if (data.entidade_id !== undefined) { fields.push(`entidade_id = $${idx++}`); values.push(data.entidade_id); }
+        if (data.changed_by !== undefined || userId != null) {
             fields.push(`changed_by = $${idx++}`);
-            values.push(data.changed_by);
+            values.push(data.changed_by !== undefined ? data.changed_by : Number(userId));
         }
-        if (data.changed_at !== undefined) {
-            fields.push(`changed_at = $${idx++}`);
-            values.push(data.changed_at);
-        }
-        if (data.meta !== undefined) {
-            fields.push(`meta = $${idx++}`);
-            values.push(data.meta);
-        }
+        if (data.changed_at !== undefined) { fields.push(`changed_at = $${idx++}`); values.push(data.changed_at); }
+        if (data.meta !== undefined) { fields.push(`meta = $${idx++}`); values.push(data.meta); }
 
         if (fields.length === 0) {
             await client.query("ROLLBACK");
@@ -178,13 +149,26 @@ const updateOcorrenciaHistorico = async (id, data) => {
     }
 };
 
-const deleteOcorrenciaHistorico = async (id) => {
-    const sql = `
-    delete from t_ocorrencia_historico
-    where historico_id = $1
-  `;
-    await db.query(sql, [id]);
-    return true;
+const deleteOcorrenciaHistorico = async (id, { userId } = {}) => {
+    const client = await db.getClient();
+    try {
+        await client.query("BEGIN");
+        await client.query(`select set_config('app.user_id', $1, true)`, [String(userId ?? '')]);
+
+        const sql = `
+      delete from t_ocorrencia_historico
+      where historico_id = $1
+    `;
+        await client.query(sql, [id]);
+
+        await client.query("COMMIT");
+        return true;
+    } catch (e) {
+        await client.query("ROLLBACK");
+        throw e;
+    } finally {
+        client.release();
+    }
 };
 
 module.exports = {

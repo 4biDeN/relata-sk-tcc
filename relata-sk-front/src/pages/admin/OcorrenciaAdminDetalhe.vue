@@ -26,10 +26,10 @@
                 <q-tabs v-model="tab" dense active-color="green-9" indicator-color="green-9" class="text-grey-7">
                     <q-tab name="detalhe" label="Detalhe" />
                     <q-tab name="historico" label="Histórico" />
+                    <q-tab name="comentarios" :label="`Comentários (${comentTotal})`" />
                 </q-tabs>
                 <q-separator />
 
-                <!-- DETALHE -->
                 <div v-show="tab === 'detalhe'">
                     <q-card-section>
                         <div class="row q-col-gutter-md">
@@ -338,6 +338,87 @@
                         </div>
                     </q-card-section>
                 </div>
+
+                <div v-show="tab === 'comentarios'">
+                    <q-card-section>
+                        <div class="row items-center q-col-gutter-sm q-mb-sm">
+                            <div class="col">
+                                <div class="text-bold text-grey-8">Comentários</div>
+                                <div class="text-caption text-grey-6">{{ comentTotal }} comentário(s)</div>
+                            </div>
+                            <div class="col-auto row items-center q-gutter-sm">
+                                <q-toggle v-model="comentShowExcluded" label="Mostrar excluídos" />
+                                <q-btn dense flat icon="refresh" :loading="comentLoading" @click="reloadComentarios" />
+                            </div>
+                        </div>
+
+                        <q-card flat bordered class="q-mb-md">
+                            <q-card-section class="q-gutter-sm">
+                                <q-input v-model="novoComentarioTexto" type="textarea" autogrow outlined
+                                    :disable="comentSaving"
+                                    placeholder="Escreva seu comentário... (Ctrl+Enter para enviar)"
+                                    @keyup.ctrl.enter="enviarComentario" />
+                                <div class="row items-center q-gutter-sm">
+                                    <q-btn label="Enviar" color="green-9" :loading="comentSaving"
+                                        :disable="!novoComentarioTexto || !novoComentarioTexto.trim()"
+                                        @click="enviarComentario" />
+                                    <q-btn flat label="Limpar" :disable="comentSaving || !novoComentarioTexto"
+                                        @click="novoComentarioTexto = ''" />
+                                </div>
+                            </q-card-section>
+                        </q-card>
+
+                        <q-inner-loading :showing="comentLoading"><q-spinner size="32px" /></q-inner-loading>
+
+                        <q-list separator v-if="comentarios.length">
+                            <q-item v-for="c in comentarios" :key="c.comentario_id"
+                                :class="c.comentario_excluido ? 'bg-grey-2 text-grey-7' : ''">
+                                <q-item-section avatar>
+                                    <q-avatar color="primary" text-color="white" size="32px">
+                                        {{ (c.comentario_user_username || c.comentario_user_nome ||
+                                            '?').slice(0, 1).toUpperCase() }}
+                                    </q-avatar>
+                                </q-item-section>
+
+                                <q-item-section>
+                                    <q-item-label class="row items-center q-gutter-sm">
+                                        <span class="text-weight-medium">{{ c.comentario_user_nome ||
+                                            c.comentario_user_username
+                                        }}</span>
+                                        <q-badge v-if="c.comentario_excluido" color="grey-7" text-color="white"
+                                            label="excluído" />
+                                    </q-item-label>
+                                    <q-item-label caption>
+                                        {{ formatComentDate(c.comentario_data) }}
+                                    </q-item-label>
+                                    <q-item-label class="q-mt-sm">
+                                        <div style="white-space: pre-wrap">{{ c.comentario_texto }}</div>
+                                    </q-item-label>
+                                </q-item-section>
+
+                                <q-item-section side top>
+                                    <div class="column items-end q-gutter-xs">
+                                        <q-btn size="sm" flat icon="delete" color="negative"
+                                            v-if="!c.comentario_excluido"
+                                            @click="softExcluirComentario(c.comentario_id)" />
+                                        <q-btn size="sm" flat icon="delete_forever" color="negative" v-else
+                                            @click="removerComentario(c.comentario_id)" />
+                                    </div>
+                                </q-item-section>
+                            </q-item>
+                        </q-list>
+
+                        <div v-else class="text-grey-6">Nenhum comentário por aqui…</div>
+
+                        <div class="row justify-center q-mt-md" v-if="comentarios.length < comentTotal">
+                            <q-btn flat :loading="comentLoading" label="Carregar mais"
+                                @click="carregarMaisComentarios" />
+                            <div class="text-caption q-ml-sm">
+                                {{ Math.min(comentarios.length, comentTotal) }} / {{ comentTotal }}
+                            </div>
+                        </div>
+                    </q-card-section>
+                </div>
             </template>
         </q-card>
     </q-page>
@@ -350,6 +431,8 @@ import { date, useQuasar } from 'quasar'
 import { useOcorrenciaDetalheStore } from 'src/stores/ocorrenciaDetalhe'
 import { useOcorrenciaImagemStore } from 'src/stores/ocorrenciaImagem'
 import { useOcorrenciaHistoricoStore } from 'src/stores/ocorrenciaHistorico'
+import { useOcorrenciaComentarioStore } from 'src/stores/ocorrenciaComentario'
+import { useAuthStore } from 'src/stores/auth'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
@@ -359,6 +442,8 @@ const router = useRouter()
 const store = useOcorrenciaDetalheStore()
 const imgStore = useOcorrenciaImagemStore()
 const histStore = useOcorrenciaHistoricoStore()
+const comentStore = useOcorrenciaComentarioStore()
+const authStore = useAuthStore?.()
 
 const id = String(route.params.id)
 const loading = ref(false)
@@ -690,6 +775,113 @@ function usuarioFmt(h) {
     const namePart = h?.changed_by_username ? ` — ${h.changed_by_username}` : ''
     return `Usuário: ${idPart}${namePart}`
 }
+
+const comentarios = computed(() => comentStore.list(id))
+const comentTotal = computed(() => comentStore.total(id))
+const comentLoading = computed(() => comentStore.loading)
+const comentSaving = computed(() => comentStore.saving)
+
+const comentShowExcluded = ref(false)
+const novoComentarioTexto = ref('')
+
+function formatComentDate(v) { return v ? date.formatDate(v, 'DD/MM/YYYY HH:mm') : '-' }
+
+async function carregarComentarios(force = false) {
+    await comentStore.carregar(id, {
+        includeExcluidos: comentShowExcluded.value,
+        limit: 20,
+        offset: 0,
+        force,
+    })
+}
+
+async function carregarMaisComentarios() {
+    const st = comentStore.pageState(id)
+    await comentStore.paginar(id, {
+        includeExcluidos: comentShowExcluded.value,
+        limit: st.limit ?? 20,
+        offset: (st.offset ?? 0) + (st.limit ?? 20),
+    })
+}
+async function reloadComentarios() {
+    await carregarComentarios(true)
+}
+
+async function enviarComentario() {
+    const texto = (novoComentarioTexto.value || '').trim()
+    if (!texto) return
+
+    const currentUserId =
+        authStore?.user?.id ??
+        authStore?.user?.user_id ??
+        item.value?.ocorrencia_usuario_id ??
+        null
+
+    if (!currentUserId) {
+        $q.notify({ type: 'negative', message: 'Usuário não identificado para comentar.' })
+        return
+    }
+
+    try {
+        await comentStore.adicionar(id, {
+            comentario_user_id: Number(currentUserId),
+            comentario_texto: texto,
+        })
+        novoComentarioTexto.value = ''
+    } catch (e) {
+        $q.notify({ type: 'negative', message: e?.message || 'Erro ao enviar comentário' })
+    }
+}
+
+async function softExcluirComentario(comentarioId) {
+    try {
+        await comentStore.softRemover(id, comentarioId)
+        $q.notify({ type: 'warning', message: 'Comentário marcado como excluído' })
+    } catch (e) {
+        $q.notify({ type: 'negative', message: e?.message || 'Falha ao excluir' })
+    }
+}
+
+async function removerComentario(comentarioId) {
+    $q.dialog({
+        title: 'Remover definitivamente?',
+        message: 'Esta ação não pode ser desfeita.',
+        cancel: true,
+        persistent: true,
+    }).onOk(async () => {
+        try {
+            await comentStore.remover(id, comentarioId)
+            $q.notify({ type: 'positive', message: 'Comentário removido' })
+        } catch (e) {
+            $q.notify({ type: 'negative', message: e?.message || 'Falha ao remover' })
+        }
+    })
+}
+
+onMounted(async () => {
+    await comentStore.carregar(id, { includeExcluidos: false, limit: 10, offset: 0, force: true })
+})
+
+watch(() => route.params.id, async (nid, oid) => {
+    if (nid && nid !== oid) {
+        await comentStore.carregar(nid, { includeExcluidos: false, limit: 10, offset: 0, force: true })
+    }
+})
+watch(tab, async (t) => {
+    if (t === 'comentarios') {
+        const cur = comentStore.list(id)
+        if (!cur.length) {
+            await comentStore.carregar(id, { includeExcluidos: false, limit: 20, offset: 0, force: true })
+        }
+    }
+})
+
+watch(comentShowExcluded, async () => {
+    if (tab.value === 'comentarios') {
+        await carregarComentarios(true)
+    }
+})
+
 </script>
 
 <style scoped>
@@ -806,5 +998,95 @@ function usuarioFmt(h) {
     padding: 4px 12px;
     font-weight: 700;
     font-size: 12px;
+}
+
+.coment-card {
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, .04);
+}
+
+.coment-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.coment-editor :deep(.q-field__control) {
+    min-height: 56px;
+    border-radius: 10px;
+    padding: 8px 10px;
+}
+
+.coment-list :deep(.q-item) {
+    padding: 10px 8px;
+}
+
+.coment-list :deep(.q-item__label--caption) {
+    color: #90a4ae;
+}
+
+.coment-excluido {
+    background: #f1f3f4;
+    color: #607d8b;
+}
+
+.coment-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.coment-empty {
+    color: #90a4ae;
+    padding: 8px 0;
+}
+
+.coment-load {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 0;
+}
+
+.q-tab-panel .row.items-center.q-col-gutter-sm.q-mb-sm {
+    margin-bottom: 4px;
+}
+
+.q-toggle {
+    font-size: 13px;
+    --q-toggle-size: 20px;
+}
+
+.q-toggle :deep(.q-toggle__label) {
+    color: #607d8b;
+}
+
+.coment-list :deep(.q-item__label--caption) {
+    color: #9e9e9e;
+    font-size: 12px;
+}
+
+.coment-list :deep(.q-item__label) {
+    line-height: 1.4;
+}
+
+.coment-list :deep(.q-item__label.text-weight-medium) {
+    font-size: 13px;
+    color: #37474f;
+}
+
+.coment-list :deep(.q-item-label:not(.caption)) {
+    color: #263238;
+}
+
+.q-btn[color="negative"][icon="delete"],
+.q-btn[color="negative"][icon="delete_forever"] {
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.q-btn[color="negative"][icon="delete"]:hover,
+.q-btn[color="negative"][icon="delete_forever"]:hover {
+    opacity: 1;
 }
 </style>

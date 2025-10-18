@@ -2,6 +2,7 @@ const ocorrenciaHistoricoService = require("../services/ocorrenciaHistoricoServi
 
 const createOcorrenciaHistorico = async (req, res) => {
     try {
+        const userId = Number(req.user?.sub);
         const body = {
             ocorrencia_id: Number(req.params.ocorrencia_id ?? req.body.ocorrencia_id),
             acao: req.body.acao,
@@ -10,16 +11,20 @@ const createOcorrenciaHistorico = async (req, res) => {
             valor_anterior: req.body.valor_anterior ?? null,
             valor_novo: req.body.valor_novo ?? null,
             entidade_id: req.body.entidade_id ? Number(req.body.entidade_id) : null,
-            changed_by: req.body.changed_by ? Number(req.body.changed_by) : null,
             changed_at: req.body.changed_at ? new Date(req.body.changed_at) : null,
             meta: req.body.meta ?? {},
         };
 
-        if (!Number.isInteger(body.ocorrencia_id) || typeof body.acao !== "string" || typeof body.entidade !== "string") {
+        if (
+            !Number.isInteger(body.ocorrencia_id) ||
+            typeof body.acao !== "string" ||
+            typeof body.entidade !== "string" ||
+            !Number.isInteger(userId)
+        ) {
             return res.status(400).json({ message: "Parâmetros inválidos" });
         }
 
-        const created = await ocorrenciaHistoricoService.appendOcorrenciaHistorico(body);
+        const created = await ocorrenciaHistoricoService.appendOcorrenciaHistorico(body, { userId });
         if (!created) return res.status(200).json({ skipped: true });
         return res.status(201).json(created);
     } catch (err) {
@@ -37,11 +42,12 @@ const getOcorrenciaHistoricoByOcorrencia = async (req, res) => {
             return res.status(400).json({ message: "Parâmetros inválidos" });
         }
 
-        const { rows, total } = await ocorrenciaHistoricoService.getOcorrenciaHistoricoByOcorrencia(
-            ocorrencia_id,
-            limit,
-            offset
-        );
+        const { rows, total } =
+            await ocorrenciaHistoricoService.getOcorrenciaHistoricoByOcorrencia(
+                ocorrencia_id,
+                limit,
+                offset
+            );
 
         return res.json({ rows, total });
     } catch (err) {
@@ -51,6 +57,7 @@ const getOcorrenciaHistoricoByOcorrencia = async (req, res) => {
 
 const updateOcorrenciaHistorico = async (req, res) => {
     try {
+        const userId = Number(req.user?.sub);
         const id = Number(req.params.id);
         const data = {};
 
@@ -61,15 +68,14 @@ const updateOcorrenciaHistorico = async (req, res) => {
         if (req.body.valor_anterior !== undefined) data.valor_anterior = req.body.valor_anterior;
         if (req.body.valor_novo !== undefined) data.valor_novo = req.body.valor_novo;
         if (req.body.entidade_id !== undefined) data.entidade_id = Number(req.body.entidade_id);
-        if (req.body.changed_by !== undefined) data.changed_by = Number(req.body.changed_by);
         if (req.body.changed_at !== undefined) data.changed_at = new Date(req.body.changed_at);
         if (req.body.meta !== undefined) data.meta = req.body.meta;
 
-        if (!Number.isInteger(id)) {
+        if (!Number.isInteger(id) || !Number.isInteger(userId)) {
             return res.status(400).json({ message: "Parâmetros inválidos" });
         }
 
-        const updated = await ocorrenciaHistoricoService.updateOcorrenciaHistorico(id, data);
+        const updated = await ocorrenciaHistoricoService.updateOcorrenciaHistorico(id, data, { userId });
 
         if (!updated) {
             return res.status(400).json({ message: "Nada para atualizar" });
@@ -86,11 +92,12 @@ const updateOcorrenciaHistorico = async (req, res) => {
 
 const deleteOcorrenciaHistorico = async (req, res) => {
     try {
+        const userId = Number(req.user?.sub);
         const id = Number(req.params.id);
-        if (!Number.isInteger(id)) {
+        if (!Number.isInteger(id) || !Number.isInteger(userId)) {
             return res.status(400).json({ message: "Parâmetros inválidos" });
         }
-        await ocorrenciaHistoricoService.deleteOcorrenciaHistorico(id);
+        await ocorrenciaHistoricoService.deleteOcorrenciaHistorico(id, { userId });
         return res.status(204).send();
     } catch (err) {
         if (err.message === "Registro não encontrado") {

@@ -4,7 +4,8 @@ const Ocorrencias = require('./ocorrenciaRoute');
 const Locais = require('./localRoute');
 const Historicos = require('./ocorrenciaHistoricoRoutes');
 const Municipios = require('./municipiosRoute');
-const Imagens = require('./ocorrenciaImagemRoute')
+const Imagens = require('./ocorrenciaImagemRoute');
+const Comentarios = require('./ocorrenciaComentarioRoute');
 
 module.exports = (app) => {
     Login(app)
@@ -14,4 +15,5 @@ module.exports = (app) => {
     Historicos(app)
     Municipios(app)
     Imagens(app)
+    Comentarios(app)
 };
