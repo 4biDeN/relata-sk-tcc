@@ -41,7 +41,7 @@ const createOcorrencia = async (req, res) => {
                 .json({ message: "Validação falhou", errors: erros });
 
         const payload = {
-            ocorrencia_user_id: req.user?.sub || body.ocorrencia_user_id,
+            ocorrencia_user_id: req.user?.sub,
             ocorrencia_anonima:
                 body.ocorrencia_anonima === "true" || body.ocorrencia_anonima === true,
             ocorrencia_titulo: String(body.ocorrencia_titulo).trim(),
@@ -90,7 +90,7 @@ const getOcorrenciaById = async (req, res) => {
 
 const getOcorrenciaByUser = async (req, res) => {
     try {
-        const userId = Number(req.params.user_id);
+        const userId = Number(req.user.sub);
         if (!Number.isInteger(userId) || userId <= 0)
             return res.status(400).json({ message: "Parâmetro user_id inválido" });
 
@@ -375,6 +375,7 @@ const getOcorrenciasByLocal = async (req, res) => {
 const getOcorrenciaBySetor = async (req, res) => {
     try {
         const ocorrencia_atribuida = Number(req.params.ocorrencia_atribuida);
+        const userId = req.user.sub;
         if (!Number.isInteger(userId) || userId <= 0)
             return res
                 .status(400)

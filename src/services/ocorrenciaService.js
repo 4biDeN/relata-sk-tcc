@@ -4,6 +4,7 @@ const { toPublicUrl } = require("../storage");
 const createOcorrencia = async (data) => {
     const client = await db.getClient();
     try {
+        const userId = data.ocorrencia_user_id;
         await client.query("BEGIN");
         await client.query(`select set_config('app.user_id', $1, true)`, [String(userId ?? '')]);
 
@@ -83,6 +84,7 @@ const createOcorrencia = async (data) => {
             data.ocorrencia_prioridade ?? 2,
             localId,
         ];
+        console.log("data\n", data)
         const ocorrenciaRes = await client.query(insOcSql, insOcParams);
         const ocorrencia = ocorrenciaRes.rows[0];
 
