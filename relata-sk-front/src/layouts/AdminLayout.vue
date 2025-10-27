@@ -2,16 +2,23 @@
     <q-layout view="hHh lpR fFf">
         <q-header elevated class="bg-green-9 text-white">
             <q-toolbar>
-                <q-btn flat dense round icon="menu" @click="leftDrawerOpen = !leftDrawerOpen" class="text-white" />
-                <q-toolbar-title class="row items-center q-gutter-sm">
-                    <q-icon name="admin_panel_settings" size="22px" class="q-mr-xs" />
-                    <span>Admin • Saudades/SC</span>
+                <q-btn flat dense round icon="menu" @click="toggleDrawer" class="text-white" />
+                <q-toolbar-title class="row items-center no-wrap">
+                    <q-icon name="admin_panel_settings" size="22px" class="q-mr-sm" />
+                    <span class="app-title">Admin • Saudades/SC</span>
+                    <span class="title-sep"> - </span>
+                    <span class="page-title">{{ activeLabel }}</span>
                 </q-toolbar-title>
+                <q-btn flat dense round icon="notifications" class="text-white q-mr-xs"
+                    @click="router.push('/admin/notificacoes')">
+                    <q-badge v-if="unread > 0" floating color="red" rounded>{{ unread }}</q-badge>
+                </q-btn>
                 <q-btn flat dense icon="logout" label="Sair" class="q-ml-md text-white" @click="logout" />
             </q-toolbar>
         </q-header>
 
-        <q-drawer v-model="leftDrawerOpen" show-if-above bordered class="bg-grey-1">
+        <q-drawer v-model="leftDrawerOpen" :mini="miniState" :breakpoint="$q.screen.sizes.md" :width="260"
+            :mini-width="64" bordered class="bg-grey-1" show-if-above>
             <q-list padding>
                 <q-item to="/admin" clickable v-ripple exact :active="$route.path === '/admin'"
                     active-class="item-active">
@@ -25,33 +32,60 @@
                     <q-item-section>Ocorrências</q-item-section>
                 </q-item>
 
-                <q-item to="/admin/setores" clickable v-ripple :active="$route.path.startsWith('/admin/setores')"
-                    active-class="item-active">
-                    <q-item-section avatar><q-icon name="apartment" /></q-item-section>
-                    <q-item-section>Setores</q-item-section>
-                </q-item>
-
                 <q-item to="/admin/usuarios" clickable v-ripple :active="$route.path.startsWith('/admin/usuarios')"
                     active-class="item-active">
                     <q-item-section avatar><q-icon name="group" /></q-item-section>
                     <q-item-section>Usuários</q-item-section>
                 </q-item>
+
+                <q-separator spaced />
+
+                <q-item to="/admin/notificacoes" clickable v-ripple
+                    :active="$route.path.startsWith('/admin/notificacoes')" active-class="item-active">
+                    <q-item-section avatar class="relative-position">
+                        <q-icon name="notifications" />
+                        <q-badge v-if="unread > 0" color="red" floating rounded class="q-mt-xs">{{ unread }}</q-badge>
+                    </q-item-section>
+                    <q-item-section>Notificações</q-item-section>
+                </q-item>
             </q-list>
         </q-drawer>
 
         <q-page-container>
-            <router-view />
+            <router-view :key="$route.fullPath" />
         </q-page-container>
     </q-layout>
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { Notify } from 'quasar'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { useQuasar, Notify } from 'quasar'
+import { useNotificacaoStore } from 'src/stores/notifications'
 
-const leftDrawerOpen = ref(true)
+const $q = useQuasar()
 const router = useRouter()
+const route = useRoute()
+
+const leftDrawerOpen = ref($q.screen.gt.sm)
+const miniState = ref($q.screen.gt.md)
+
+const store = useNotificacaoStore()
+const unread = computed(() => store.unreadCount)
+
+const activeLabel = computed(() => {
+    const p = route.path || ''
+    if (p.startsWith('/admin/notificacoes')) return 'Notificações'
+    if (p.startsWith('/admin/ocorrencias')) return 'Ocorrências'
+    if (p.startsWith('/admin/usuarios')) return 'Usuários'
+    if (p === '/admin') return 'Dashboard'
+    return ''
+})
+
+function toggleDrawer() {
+    if ($q.screen.lt.md) leftDrawerOpen.value = !leftDrawerOpen.value
+    else miniState.value = !miniState.value
+}
 
 function logout() {
     localStorage.removeItem('token')
@@ -60,11 +94,37 @@ function logout() {
     Notify.create({ type: 'positive', message: 'Sessão encerrada.' })
     router.push('/login')
 }
+
+let intervalId = null
+onMounted(async () => {
+    try { await store.carregar({ force: true }) } catch (err) { console.warn('load notif fail:', err) }
+    try { await store.atualizarUnread({ canal: 'in_app' }) } catch (err) { console.warn('unread fail:', err) }
+    intervalId = setInterval(() => {
+        store.atualizarUnread({ canal: 'in_app' }).catch((err) => console.warn('unread fail:', err))
+    }, 30000)
+})
+onBeforeUnmount(() => { if (intervalId) clearInterval(intervalId) })
 </script>
 
 <style scoped>
+.app-title,
+.page-title {
+    font-weight: 600;
+    font-size: 18px;
+    line-height: 1;
+}
+
+.title-sep {
+    margin: 0 6px;
+    opacity: .9;
+}
+
 .item-active {
-    background: rgba(0, 121, 52, 0.08);
-    border-left: 3px solid #1b5e20;
+    background: #1b5e20 !important;
+    color: #fff !important;
+}
+
+.item-active .q-icon {
+    color: #fff !important;
 }
 </style>

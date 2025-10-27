@@ -533,11 +533,30 @@ onMounted(async () => {
 })
 
 const comentStore = useOcorrenciaComentarioStore()
-
 const comentarios = computed(() => comentStore.list(route.params.id))
 const comentTotal = computed(() => comentStore.total(route.params.id))
 const comentLoading = computed(() => comentStore.loading)
 const comentSaving = computed(() => comentStore.saving)
+
+onMounted(async () => {
+    await comentStore.carregar(route.params.id, {
+        includeExcluidos: false,
+        limit: 1,
+        offset: 0,
+        force: true,
+    })
+})
+
+watch(() => route.params.id, async (newId, oldId) => {
+    if (newId && newId !== oldId) {
+        await comentStore.carregar(newId, {
+            includeExcluidos: false,
+            limit: 1,
+            offset: 0,
+            force: true,
+        })
+    }
+})
 
 const novoComentarioTexto = ref('')
 
@@ -592,8 +611,16 @@ async function softExcluirComentario(comentarioId) {
 }
 
 watch(tab, async (t) => {
-    if (t === 'comentarios' && comentarios.value.length === 0) {
-        await carregarComentarios(true)
+    if (t === 'comentarios') {
+        const cur = comentStore.list(route.params.id)
+        if (!cur.length || cur.length === 1) {
+            await comentStore.carregar(route.params.id, {
+                includeExcluidos: false,
+                limit: 20,
+                offset: 0,
+                force: true,
+            })
+        }
     }
 })
 

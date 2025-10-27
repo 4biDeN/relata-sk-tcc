@@ -110,54 +110,122 @@ create table if not exists t_ocorrencia_historico (
     meta jsonb not null default '{}' :: jsonb
 );
 
+create table if not exists t_ocorrencia_comentario (
+    comentario_id bigserial primary key,
+    comentario_ocorrencia_id integer not null references t_ocorrencia(ocorrencia_id),
+    comentario_user_id integer not null references t_usuario(user_id),
+    comentario_texto text not null,
+    comentario_data timestamp not null default current_timestamp,
+    comentario_excluido boolean not null default false
+);
+
+create table if not exists t_ocorrencia_imagem (
+    ocorrencia_imagem_id serial primary key,
+    ocorrencia_id integer not null references t_ocorrencia(ocorrencia_id),
+    ocorrencia_imagem_url text not null
+);
+
+create table if not exists t_notificacao (
+    notificacao_id bigserial primary key,
+    notificacao_user_id integer references t_usuario(user_id),
+    notificacao_user_type integer references t_user_type(user_type_id),
+    notificacao_ocorrencia_id integer references t_ocorrencia(ocorrencia_id) on
+    delete
+    set
+        null,
+        notificacao_tipo text not null check (
+            notificacao_tipo in (
+                'status_change',
+                'comment',
+                'image_added',
+                'assigned',
+                'generic'
+            )
+        ),
+        notificacao_canal text not null default 'in_app' check (
+            notificacao_canal in ('in_app', 'email', 'push', 'sms')
+        ),
+        notificacao_titulo text not null,
+        notificacao_mensagem text not null,
+        action_url text,
+        prioridade smallint not null default 3 check (
+            prioridade between 1
+            and 5
+        ),
+        status text not null default 'queued' check (
+            status in (
+                'queued',
+                'sending',
+                'sent',
+                'failed',
+                'read',
+                'canceled'
+            )
+        ),
+        agendar_em timestamp,
+        enviada_em timestamp,
+        lida_em timestamp,
+        cancelada_em timestamp,
+        erro_envio text,
+        meta jsonb not null default '{}' :: jsonb,
+        created_at timestamp not null default current_timestamp,
+        updated_at timestamp not null default current_timestamp,
+        constraint chk_notif_target check (
+            notificacao_user_id is not null
+            or notificacao_user_type is not null
+        )
+);
+
+create table if not exists t_outbox_event (
+  outbox_id      bigserial primary key,
+  aggregate      text not null check (aggregate in ('ocorrencia')),
+  aggregate_id   bigint not null,
+  event_type     text not null check (
+    event_type in ('status_change','comment','image_added','assigned','updated','created','deleted','generic')
+  ),
+  payload        jsonb not null default '{}'::jsonb,
+  occurred_at    timestamp not null default current_timestamp,
+  processed_at   timestamp,
+  attempts       smallint not null default 0,
+  last_error     text
+);
+
+create table if not exists t_ocorrencia_watcher (
+  ocorrencia_id integer not null references t_ocorrencia(ocorrencia_id) on delete cascade,
+  user_id       integer not null references t_usuario(user_id) on delete cascade,
+  primary key (ocorrencia_id, user_id)
+);
+
+create table if not exists t_user_notification_pref (
+  user_id    integer primary key references t_usuario(user_id) on delete cascade,
+  in_app     boolean not null default true,
+  push       boolean not null default true,
+  email      boolean not null default false,
+  sms        boolean not null default false,
+  mute_until timestamp,
+  rules      jsonb not null default '{}'::jsonb
+);
+
+create table if not exists t_webpush_subscription (
+  subscription_id bigserial primary key,
+  user_id integer not null references t_usuario(user_id) on delete cascade,
+  endpoint text not null,
+  keys jsonb not null,
+  created_at timestamp not null default current_timestamp,
+  unique (user_id, endpoint)
+);
+
+create index if not exists ix_hist_tipo on t_ocorrencia_historico (acao, entidade);
+create index if not exists ix_notif_target_status on t_notificacao (coalesce(notificacao_user_id,-1), coalesce(notificacao_user_type,-1), status);
+create unique index if not exists ux_notif_dedupe
+  on t_notificacao ((meta->>'dedupe_key'))
+  where meta ? 'dedupe_key';
+
 create index if not exists idx_hist_ocid_time on t_ocorrencia_historico (ocorrencia_id, changed_at desc);
 
 create index if not exists idx_hist_entidade on t_ocorrencia_historico (entidade);
 
 create index if not exists idx_hist_acao on t_ocorrencia_historico (acao);
-
-create table if not exists t_notificacao (
-    notificacao_id bigserial primary key,
-    notificacao_user_id integer not null references t_usuario(user_id),
-    notificacao_ocorrencia_id integer references t_ocorrencia(ocorrencia_id),
-    notificacao_tipo text not null check (
-        notificacao_tipo in (
-            'status_change',
-            'comment',
-            'image_added',
-            'assigned',
-            'generic'
-        )
-    ),
-    notificacao_canal text not null default 'in_app' check (
-        notificacao_canal in ('in_app', 'email', 'push', 'sms')
-    ),
-    notificacao_titulo text not null,
-    notificacao_mensagem text not null,
-    action_url text,
-    prioridade smallint not null default 3 check (
-        prioridade between 1
-        and 5
-    ),
-    status text not null default 'queued' check (
-        status in (
-            'queued',
-            'sending',
-            'sent',
-            'failed',
-            'read',
-            'canceled'
-        )
-    ),
-    agendar_em timestamp,
-    enviada_em timestamp,
-    lida_em timestamp,
-    cancelada_em timestamp,
-    erro_envio text,
-    meta jsonb not null default '{}' :: jsonb,
-    created_at timestamp not null default current_timestamp,
-    updated_at timestamp not null default current_timestamp
-);
 
 create index if not exists ix_notif_user_time on t_notificacao (notificacao_user_id, created_at desc);
 
@@ -169,13 +237,25 @@ create index if not exists ix_notif_status_time on t_notificacao (status, create
 
 create index if not exists ix_notif_canal on t_notificacao (notificacao_canal);
 
+create index if not exists ix_outbox_unprocessed on t_outbox_event(processed_at) where processed_at is null;
+
 create unique index if not exists uq_notif_dedup on t_notificacao (
-    notificacao_user_id,
+    coalesce(notificacao_user_id, -1),
+    coalesce(notificacao_user_type, -1),
     coalesce(notificacao_ocorrencia_id, -1),
-    notificacao_tipo
+    notificacao_tipo,
+    notificacao_canal
 )
 where
     status in ('queued', 'sending');
+
+alter table
+    t_notificacao drop constraint if exists t_notificacao_notificacao_ocorrencia_id_fkey,
+add
+    constraint t_notificacao_notificacao_ocorrencia_id_fkey foreign key (notificacao_ocorrencia_id) references t_ocorrencia(ocorrencia_id) on
+delete
+set
+    null;
 
 create
 or replace function trg_notif_set_updated_at() returns trigger language plpgsql as $$ begin
@@ -191,20 +271,122 @@ create trigger tbu_notificacao_updated_at before
 update
     on t_notificacao for each row execute function trg_notif_set_updated_at();
 
-create table if not exists t_ocorrencia_comentario (
-    comentario_id bigserial primary key,
-    comentario_ocorrencia_id integer not null references t_ocorrencia(ocorrencia_id),
-    comentario_user_id integer not null references t_usuario(user_id),
-    comentario_texto text not null,
-    comentario_data timestamp not null default current_timestamp,
-    comentario_excluido boolean not null default false
-);
+create
+or replace function fn_notificacao_enqueue(
+    p_notificacao_user_id integer,
+    p_notificacao_user_type integer,
+    p_notificacao_ocorrencia_id integer,
+    p_notificacao_tipo text,
+    p_notificacao_titulo text,
+    p_notificacao_mensagem text,
+    p_notificacao_canal text default 'in_app',
+    p_action_url text default null,
+    p_prioridade smallint default 3,
+    p_agendar_em timestamp default null,
+    p_meta jsonb default '{}' :: jsonb
+) returns bigint language plpgsql as $$
+declare
+    v_id bigint;
 
-create table if not exists t_ocorrencia_imagem (
-    ocorrencia_imagem_id serial primary key,
-    ocorrencia_id integer not null references t_ocorrencia(ocorrencia_id),
-    ocorrencia_imagem_url text not null
-);
+begin
+    if p_notificacao_user_id is null
+    and p_notificacao_user_type is null then raise
+    exception
+        'pelo menos um alvo deve ser informado: notificacao_user_id ou notificacao_user_type';
+
+end if;
+
+insert into
+    t_notificacao (
+        notificacao_user_id,
+        notificacao_user_type,
+        notificacao_ocorrencia_id,
+        notificacao_tipo,
+        notificacao_canal,
+        notificacao_titulo,
+        notificacao_mensagem,
+        action_url,
+        prioridade,
+        status,
+        agendar_em,
+        meta
+    )
+values
+    (
+        p_notificacao_user_id,
+        p_notificacao_user_type,
+        p_notificacao_ocorrencia_id,
+        p_notificacao_tipo,
+        p_notificacao_canal,
+        p_notificacao_titulo,
+        p_notificacao_mensagem,
+        p_action_url,
+        p_prioridade,
+        'queued',
+        p_agendar_em,
+        coalesce(p_meta, '{}' :: jsonb)
+    ) on conflict on constraint uq_notif_dedup do nothing returning notificacao_id into v_id;
+
+if v_id is null then
+select
+    n.notificacao_id into v_id
+from
+    t_notificacao n
+where
+    coalesce(n.notificacao_user_id, -1) = coalesce(p_notificacao_user_id, -1)
+    and coalesce(n.notificacao_user_type, -1) = coalesce(p_notificacao_user_type, -1)
+    and coalesce(n.notificacao_ocorrencia_id, -1) = coalesce(p_notificacao_ocorrencia_id, -1)
+    and n.notificacao_tipo = p_notificacao_tipo
+    and n.notificacao_canal = p_notificacao_canal
+    and n.status in ('queued', 'sending')
+order by
+    n.created_at desc,
+    n.notificacao_id desc
+limit
+    1;
+
+end if;
+
+return v_id;
+
+end $$;
+
+create
+or replace function trg_notif_status_timestamps() returns trigger language plpgsql as $$ begin
+    if new .status is distinct
+    from
+        old .status then case
+            new .status
+            when 'sent' then if new .enviada_em is null then new .enviada_em := current_timestamp;
+
+end if;
+
+when 'read' then if new .lida_em is null then new .lida_em := current_timestamp;
+
+end if;
+
+when 'canceled' then if new .cancelada_em is null then new .cancelada_em := current_timestamp;
+
+end if;
+
+when 'failed' then null;
+
+else null;
+
+end case
+;
+
+end if;
+
+return new;
+
+end $$;
+
+drop trigger if exists tbu_notificacao_status_ts on t_notificacao;
+
+create trigger tbu_notificacao_status_ts before
+update
+    on t_notificacao for each row execute function trg_notif_status_timestamps();
 
 update
     t_ocorrencia
@@ -308,161 +490,149 @@ drop trigger if exists trg_ocorrencia_status_hist on t_ocorrencia;
 
 drop function if exists fn_ocorrencia_status_hist();
 
-create
-or replace function fn_ocorrencia_hist() returns trigger language plpgsql as $$
+create or replace function fn_ocorrencia_hist() returns trigger
+language plpgsql as $$
 declare
-    v_user_id integer := nullif(current_setting('app.user_id', true), '') :: int;
-
+  v_user_id integer := nullif(current_setting('app.user_id', true), '')::int;
 begin
-    if tg_op = 'insert' then
-    insert into
-        t_ocorrencia_historico (
-            ocorrencia_id,
-            acao,
-            entidade,
-            campo,
-            valor_anterior,
-            valor_novo,
-            entidade_id,
-            changed_by,
-            changed_at,
-            meta
-        )
-    values
-        (
-            new .ocorrencia_id,
-            'create',
-            'ocorrencia',
-            null,
-            null,
-            null,
-            null,
-            v_user_id,
-            current_timestamp,
-            '{}' :: jsonb
-        );
+  if tg_op = 'INSERT' then
+    insert into t_ocorrencia_historico(
+      ocorrencia_id, acao, entidade, campo,
+      valor_anterior, valor_novo, entidade_id,
+      changed_by, changed_at, meta
+    ) values (
+      new.ocorrencia_id,
+      'create',
+      'ocorrencia',
+      null,
+      null,
+      null,
+      null,
+      v_user_id,
+      current_timestamp,
+      '{}'::jsonb
+    );
+    return new;
+  end if;
 
-return new;
-
-end if;
-
-if tg_op = 'update' then if new .ocorrencia_status_id is distinct
-from
-    old .ocorrencia_status_id then
-insert into
-    t_ocorrencia_historico (
-        ocorrencia_id,
-        acao,
-        entidade,
-        campo,
-        valor_anterior,
-        valor_novo,
-        entidade_id,
-        changed_by,
-        changed_at,
-        meta
-    )
-values
-    (
-        new .ocorrencia_id,
+  if tg_op = 'UPDATE' then
+    if new.ocorrencia_status is distinct from old.ocorrencia_status then
+      insert into t_ocorrencia_historico(
+        ocorrencia_id, acao, entidade, campo,
+        valor_anterior, valor_novo, entidade_id,
+        changed_by, changed_at, meta
+      ) values (
+        new.ocorrencia_id,
         'update',
         'status',
         'status',
-        coalesce(old .ocorrencia_status_id :: text, null),
-        coalesce(new .ocorrencia_status_id :: text, null),
+        coalesce(old.ocorrencia_status::text, null),
+        coalesce(new.ocorrencia_status::text, null),
         null,
         v_user_id,
         current_timestamp,
-        '{}' :: jsonb
-    );
+        '{}'::jsonb
+      );
+    end if;
 
-end if;
-
-if new .ocorrencia_prioridade_id is distinct
-from
-    old .ocorrencia_prioridade_id then
-insert into
-    t_ocorrencia_historico (
-        ocorrencia_id,
-        acao,
-        entidade,
-        campo,
-        valor_anterior,
-        valor_novo,
-        entidade_id,
-        changed_by,
-        changed_at,
-        meta
-    )
-values
-    (
-        new .ocorrencia_id,
+    if new.ocorrencia_prioridade is distinct from old.ocorrencia_prioridade then
+      insert into t_ocorrencia_historico(
+        ocorrencia_id, acao, entidade, campo,
+        valor_anterior, valor_novo, entidade_id,
+        changed_by, changed_at, meta
+      ) values (
+        new.ocorrencia_id,
         'update',
         'prioridade',
         'prioridade',
-        coalesce(old .ocorrencia_prioridade_id :: text, null),
-        coalesce(new .ocorrencia_prioridade_id :: text, null),
+        coalesce(old.ocorrencia_prioridade::text, null),
+        coalesce(new.ocorrencia_prioridade::text, null),
         null,
         v_user_id,
         current_timestamp,
-        '{}' :: jsonb
-    );
+        '{}'::jsonb
+      );
+    end if;
 
-end if;
-
-if new .ocorrencia_atribuida_id is distinct
-from
-    old .ocorrencia_atribuida_id then
-insert into
-    t_ocorrencia_historico (
-        ocorrencia_id,
-        acao,
-        entidade,
-        campo,
-        valor_anterior,
-        valor_novo,
-        entidade_id,
-        changed_by,
-        changed_at,
-        meta
-    )
-values
-    (
-        new .ocorrencia_id,
+    if new.ocorrencia_atribuida is distinct from old.ocorrencia_atribuida then
+      insert into t_ocorrencia_historico(
+        ocorrencia_id, acao, entidade, campo,
+        valor_anterior, valor_novo, entidade_id,
+        changed_by, changed_at, meta
+      ) values (
+        new.ocorrencia_id,
         'update',
         'atribuicao',
         'atribuicao',
-        coalesce(old .ocorrencia_atribuida_id :: text, null),
-        coalesce(new .ocorrencia_atribuida_id :: text, null),
+        coalesce(old.ocorrencia_atribuida::text, null),
+        coalesce(new.ocorrencia_atribuida::text, null),
         null,
         v_user_id,
         current_timestamp,
-        '{}' :: jsonb
-    );
+        '{}'::jsonb
+      );
+    end if;
 
-end if;
+    return new;
+  end if;
 
-return new;
-
-end if;
-
-return new;
-
+  return new;
 end;
-
 $$;
 
-drop trigger if exists trg_ocorrencia_hist_ins on t_ocorrencia;
+create trigger trg_ocorrencia_hist_ins
+after insert on t_ocorrencia
+for each row execute function fn_ocorrencia_hist();
 
-create trigger trg_ocorrencia_hist_ins after
-insert
-    on t_ocorrencia for each row execute function fn_ocorrencia_hist();
+create trigger trg_ocorrencia_hist_upd
+after update on t_ocorrencia
+for each row execute function fn_ocorrencia_hist();
 
-drop trigger if exists trg_ocorrencia_hist_upd on t_ocorrencia;
+create or replace function fn_hist_to_outbox() returns trigger
+language plpgsql as $$
+declare
+  etype text;
+begin
+  etype := case
+    when new.acao = 'create'  and new.entidade = 'ocorrencia' then 'created'
+    when new.acao = 'delete'  and new.entidade = 'ocorrencia' then 'deleted'
+    when new.entidade = 'status'                               then 'status_change'
+    when new.entidade = 'comentario'                           then 'comment'
+    when new.entidade = 'imagem' and new.acao = 'attach'       then 'image_added'
+    when new.entidade = 'atribuicao'                           then 'assigned'
+    when new.acao in ('update','attach','detach')              then 'updated'
+    else 'generic'
+  end;
 
-create trigger trg_ocorrencia_hist_upd after
-update
-    on t_ocorrencia for each row execute function fn_ocorrencia_hist();
+  insert into t_outbox_event(aggregate, aggregate_id, event_type, payload, occurred_at)
+  values (
+    'ocorrencia',
+    new.ocorrencia_id,
+    etype,
+    jsonb_build_object(
+      'historico_id',   new.historico_id,
+      'ocorrencia_id',  new.ocorrencia_id,
+      'acao',           new.acao,
+      'entidade',       new.entidade,
+      'campo',          new.campo,
+      'valor_anterior', new.valor_anterior,
+      'valor_novo',     new.valor_novo,
+      'entidade_id',    new.entidade_id,
+      'changed_by',     new.changed_by,
+      'changed_at',     new.changed_at,
+      'meta',           coalesce(new.meta, '{}'::jsonb)
+    ),
+    new.changed_at
+  );
+
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_hist_to_outbox on t_ocorrencia_historico;
+create trigger trg_hist_to_outbox
+after insert on t_ocorrencia_historico
+for each row execute function fn_hist_to_outbox();
 
 create
 or replace function fn_oc_imagem_audit_ins() returns trigger language plpgsql as $$ begin
@@ -531,7 +701,7 @@ delete
     on t_ocorrencia_imagem for each row execute function fn_oc_imagem_audit_del();
 
 create
-or replace function public.fn_oc_coment_audit_ins() returns trigger language plpgsql as $$ begin
+or replace function public .fn_oc_coment_audit_ins() returns trigger language plpgsql as $$ begin
     insert into
         t_ocorrencia_historico (
             ocorrencia_id,

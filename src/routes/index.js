@@ -6,6 +6,7 @@ const Historicos = require('./ocorrenciaHistoricoRoutes');
 const Municipios = require('./municipiosRoute');
 const Imagens = require('./ocorrenciaImagemRoute');
 const Comentarios = require('./ocorrenciaComentarioRoute');
+const Notifications = require('./notificationsRoute');
 
 module.exports = (app) => {
     Login(app)
@@ -16,4 +17,5 @@ module.exports = (app) => {
     Municipios(app)
     Imagens(app)
     Comentarios(app)
+    Notifications(app)
 };

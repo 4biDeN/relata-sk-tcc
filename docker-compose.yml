@@ -10,8 +10,13 @@ services:
       - "3000:3000"
     env_file:
       - .env
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_DB: 0
     depends_on:
       - db
+      - redis
 
   db:
     build: ./database
@@ -46,7 +51,8 @@ services:
       context: ./relata-sk-front
       dockerfile: Dockerfile
       args:
-        VITE_API_BASE: "http://api_app:3000"
+        VITE_API_BASE: "http://localhost:3000"
+        VITE_WS_URL: "http://localhost:3000"
     container_name: quasar_web
     depends_on:
       - app
@@ -54,10 +60,24 @@ services:
       - "9000:80"
     restart: unless-stopped
 
+  redis:
+    image: redis:7-alpine
+    container_name: redis-notifs
+    ports: ["6379:6379"]
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
 volumes:
   db_data:
   pgadmin_data:
   app_uploads:
+  redisdata:
 
 networks:
   default:
