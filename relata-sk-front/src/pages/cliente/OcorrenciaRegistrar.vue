@@ -1,8 +1,9 @@
 ﻿<template>
     <q-page class="q-pa-md">
-        <q-stepper v-model="step" flat animated header-nav contracted active-color="green-9" done-color="green-7"
-            inactive-color="grey-5" class="stepper-elev">
-            <q-step :name="1" title="Detalhes" caption="Finalize os dados" icon="description" :done="step > 1">
+        <q-stepper v-model="step" @update:model-value="onStepChange" flat animated header-nav alternative-labels
+            :contracted="$q.screen.lt.sm" active-color="green-9" done-color="green-7" inactive-color="grey-5"
+            class="stepper-elev">
+            <q-step :name="1" title="Detalhes" caption="Detalhes da Ocorrência" icon="description" :done="step > 1">
                 <q-card flat bordered class="section-card q-pa-md">
                     <div class="row q-col-gutter-md">
                         <div class="col-12">
@@ -104,7 +105,7 @@
                                 @update:model-value="onMunicipioSelecionado"
                                 @clear="() => onMunicipioSelecionado(null)" />
                         </div>
-                        
+
                         <div class="col-12 col-sm-6">
                             <q-input v-model="form.local.local_bairro" label="Bairro" dense color="green-9"
                                 :rules="[v => !!String(v || '').trim() || 'Informe o bairro']"
@@ -181,6 +182,7 @@ const $q = useQuasar()
 const isMobile = computed(() => $q.screen.lt.sm)
 const mapEl = ref(null)
 const step = ref(1)
+const currentStep = ref(1)
 const coordsOk = computed(() => form.local.local_latitude !== null && form.local.local_longitude !== null)
 const detalhesOk = computed(() =>
     !!String(form.ocorrencia_titulo || '').trim() &&
@@ -190,6 +192,18 @@ const detalhesOk = computed(() =>
 const store = useOcorrenciaStore()
 const municipioStore = useMunicipioStore()
 const router = useRouter()
+
+
+function onStepChange(to) {
+  const from = currentStep.value
+
+  if (to > from) {
+    if (from === 1 && !detalhesOk.value) { step.value = from; return }
+    if (from === 2 && !coordsOk.value)   { step.value = from; return }
+  }
+
+  currentStep.value = to
+}
 
 const form = reactive({
     ocorrencia_user_id: null,
@@ -227,7 +241,7 @@ const podeSalvar = computed(() =>
     !!String(form.local.local_rua || '').trim()
 )
 
-const formRef = ref(null)
+const formRef = ref(1)
 const estado = ref('idle')
 const loadingGeocode = ref(false)
 const gettingLocation = ref(false)
