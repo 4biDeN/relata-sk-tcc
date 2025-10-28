@@ -1,49 +1,125 @@
 <template>
-    <q-page padding>
-        <div class="row items-center q-col-gutter-sm q-mb-md">
-            <div class="col">
-                <div class="text-h6">Usuários</div>
-            </div>
-            <div class="col-auto row items-center q-gutter-sm">
-                <q-select dense outlined v-model="filtroCampo" :options="filtros" emit-value map-options
-                    style="width: 180px" />
-                <q-input v-if="filtroCampo !== 'user_tipo'" dense outlined v-model="filtroValor"
-                    placeholder="Digite para buscar" @keyup.enter="buscar" />
-                <q-select v-else dense outlined v-model="filtroValorTipo" :options="tiposOptions" emit-value map-options
-                    placeholder="Selecione o tipo" />
-                <q-toggle v-model="incluirInativos" label="Incluir inativos" @update:model-value="buscar" /> <q-btn
-                    color="primary" icon="search" label="Buscar" @click="buscar" />
-                <q-btn flat icon="clear" label="Limpar" @click="limparBusca" />
-                <q-btn flat icon="refresh" :loading="loading" @click="reload" />
-                <q-btn color="primary" icon="add" label="Novo usuário" @click="abrirNovo" />
-            </div>
-        </div>
+    <q-page class="q-pa-md users-page">
+        <q-card flat class="surface">
+            <q-card-section class="q-pt-md q-pb-sm">
+                <div class="row items-center justify-between">
+                    <div class="row items-center q-gutter-sm">
+                        <q-avatar size="32px" class="bg-green-9 text-white">
+                            <q-icon name="group" size="18px" />
+                        </q-avatar>
+                        <div class="text-h6 text-green-10">Usuários</div>
+                        <q-badge outline color="green-9" class="q-ml-sm">{{ rows.length }}</q-badge>
+                    </div>
 
-        <q-table :rows="rowsFiltradas" :columns="columns" row-key="user_id" :loading="loading" :pagination="pagination"
-            @update:pagination="val => pagination = val" flat bordered>
-            <template #body-cell-user_tipo="props">
-                <q-td :props="props">{{ tipoNome(props.row.user_tipo) }}</q-td>
-            </template>
+                    <div class="row items-center q-gutter-sm">
+                        <q-btn color="green-9" icon="add" label="Novo usuário" unelevated @click="abrirNovo" />
+                    </div>
+                </div>
+            </q-card-section>
 
-            <template #body-cell-user_is_active="props">
-                <q-td :props="props" class="text-center">
-                    <q-chip square dense :color="props.row.user_is_active ? 'positive' : 'grey-6'" text-color="white"
-                        class="text-bold">
-                        {{ props.row.user_is_active ? 'Ativo' : 'Inativo' }}
-                    </q-chip>
-                </q-td>
-            </template>
+            <q-separator />
 
-            <template #body-cell-acoes="props">
-                <q-td :props="props">
-                    <q-btn dense round flat icon="edit" @click="abrirEditar(props.row)" />
-                </q-td>
-            </template>
-        </q-table>
+            <q-card-section class="q-pt-sm q-pb-sm">
+                <div class="row items-center q-col-gutter-sm">
+                    <div class="col-12 col-md-2">
+                        <q-select dense outlined v-model="filtroCampo" :options="filtros" emit-value map-options
+                            label="Filtrar por" :options-dense="true" />
+                    </div>
+
+                    <div class="col-12 col-md-4" v-if="filtroCampo !== 'user_tipo'">
+                        <q-input dense outlined v-model="filtroValor" label="Digite para buscar" clearable
+                            @keyup.enter="buscar">
+                            <template #prepend><q-icon name="search" class="text-green-9" /></template>
+                        </q-input>
+                    </div>
+
+                    <div class="col-12 col-md-4" v-else>
+                        <q-select dense outlined v-model="filtroValorTipo" :options="tiposOptions" emit-value
+                            map-options label="Tipo" clearable>
+                            <template #prepend><q-icon name="badge" class="text-green-9" /></template>
+                        </q-select>
+                    </div>
+
+                    <div class="col-6 col-md-2">
+                        <q-toggle v-model="incluirInativos" label="Incluir inativos" @update:model-value="buscar"
+                            color="green-9" />
+                    </div>
+
+                    <div class="col-6 col-md-4 col-lg-3 text-right">
+                        <q-btn flat class="btn-flat-green" icon="search" label="Buscar" @click="buscar" />
+                    </div>
+                </div>
+            </q-card-section>
+
+            <q-separator />
+
+            <q-card-section class="q-pa-none">
+                <q-table :rows="rowsFiltradas" :columns="columns" row-key="user_id" :loading="loading"
+                    :pagination="pagination" @update:pagination="val => pagination = val" flat class="users-table"
+                    hide-bottom :rows-per-page-options="[10, 20, 50]">
+                    <template #no-data>
+                        <div class="column items-center q-pa-xl text-grey-7">
+                            <q-icon name="person_search" size="48px" class="q-mb-sm" />
+                            <div>Nenhum usuário encontrado.</div>
+                        </div>
+                    </template>
+
+                    <template #body-cell-user_username="props">
+                        <q-td :props="props">
+                            <div class="row items-center q-gutter-sm nowrap">
+                                <q-avatar size="28px" class="bg-green-2 text-green-9">{{
+                                    initials(props.row.user_username) }}</q-avatar>
+                                <div class="col ellipsis">{{ props.row.user_username }}</div>
+                            </div>
+                        </q-td>
+                    </template>
+
+                    <template #body-cell-user_email="props">
+                        <q-td :props="props">
+                            <div class="ellipsis">{{ props.row.user_email }}</div>
+                        </q-td>
+                    </template>
+
+                    <template #body-cell-user_tipo="props">
+                        <q-td :props="props">
+                            <q-chip square dense outline :color="tipoColor(props.row.user_tipo)">
+                                {{ tipoNome(props.row.user_tipo) }}
+                            </q-chip>
+                        </q-td>
+                    </template>
+
+                    <template #body-cell-user_is_active="props">
+                        <q-td :props="props" class="text-center">
+                            <q-chip square dense :color="props.row.user_is_active ? 'positive' : 'grey-6'"
+                                text-color="white" class="text-bold">
+                                {{ props.row.user_is_active ? 'Ativo' : 'Inativo' }}
+                            </q-chip>
+                        </q-td>
+                    </template>
+
+                    <template #body-cell-acoes="props">
+                        <q-td :props="props" class="text-right">
+                            <q-btn dense round flat icon="edit" @click="abrirEditar(props.row)" />
+                        </q-td>
+                    </template>
+
+                    <template #bottom>
+                        <div class="row items-center justify-between full-width q-pa-sm">
+                            <div class="text-caption text-grey-7">
+                                {{ rowsFiltradas.length }} registro(s)
+                            </div>
+                            <q-pagination v-model="pagination.page"
+                                :max="Math.max(1, Math.ceil(rowsFiltradas.length / pagination.rowsPerPage))"
+                                max-pages="6" direction-links boundary-links color="green-9" size="sm" />
+                        </div>
+                    </template>
+                </q-table>
+            </q-card-section>
+        </q-card>
 
         <q-dialog v-model="dlg.open" persistent>
             <q-card class="dlg-card saq-elev" @keyup.esc="dlg.open = false">
-                <q-bar class="bg-saudades text-white rounded-t-xl">
+                <q-bar class="bg-green-9 text-white rounded-t-xl">
                     <div class="text-subtitle1">
                         {{ dlg.mode === 'create' ? 'Novo usuário' : 'Editar usuário' }}
                     </div>
@@ -52,16 +128,16 @@
                 </q-bar>
 
                 <q-card-section class="q-pt-md q-pb-sm">
-                    <div class="text-caption text-saudades-weak">Dados do usuário</div>
+                    <div class="text-caption text-green-8">Dados do usuário</div>
                     <div class="row q-col-gutter-md q-mt-sm">
                         <div class="col-12">
-                            <q-input v-model="form.user_username" label="Nome" filled>
-                                <template #prepend><q-icon name="person" class="text-saudades" /></template>
+                            <q-input v-model="form.user_username" label="Nome" filled clearable>
+                                <template #prepend><q-icon name="person" class="text-green-9" /></template>
                             </q-input>
                         </div>
                         <div class="col-12">
-                            <q-input v-model="form.user_email" type="email" label="E-mail" filled>
-                                <template #prepend><q-icon name="mail" class="text-saudades" /></template>
+                            <q-input v-model="form.user_email" type="email" label="E-mail" filled clearable>
+                                <template #prepend><q-icon name="mail" class="text-green-9" /></template>
                             </q-input>
                         </div>
                     </div>
@@ -70,18 +146,18 @@
                 <q-separator />
 
                 <q-card-section class="q-pt-sm q-pb-sm">
-                    <div class="text-caption text-saudades-weak">Atribuições</div>
+                    <div class="text-caption text-green-8">Atribuições</div>
                     <div class="row q-col-gutter-md q-mt-sm">
                         <div class="col-12 col-sm-6">
                             <q-select v-model="form.user_tipo" :options="tiposOptions" emit-value map-options
                                 label="Tipo" filled>
-                                <template #prepend><q-icon name="badge" class="text-saudades" /></template>
+                                <template #prepend><q-icon name="badge" class="text-green-9" /></template>
                             </q-select>
                         </div>
                         <div class="col-12 col-sm-6">
                             <q-select v-model="form.user_is_active" :options="statusOptions" emit-value map-options
                                 label="Status" filled>
-                                <template #prepend><q-icon name="toggle_on" class="text-saudades" /></template>
+                                <template #prepend><q-icon name="toggle_on" class="text-green-9" /></template>
                                 <template #selected>
                                     <q-chip square dense :color="form.user_is_active ? 'positive' : 'grey-6'"
                                         text-color="white">
@@ -96,12 +172,12 @@
                 <q-separator />
 
                 <q-card-section class="q-pt-sm q-pb-sm">
-                    <div class="text-caption text-saudades-weak">Segurança</div>
+                    <div class="text-caption text-green-8">Segurança</div>
                     <q-input v-model="form.user_documento" label="Documento" filled :disable="dlg.mode === 'edit'">
-                        <template #prepend><q-icon name="badge" class="text-saudades" /></template>
+                        <template #prepend><q-icon name="badge" class="text-green-9" /></template>
                     </q-input>
                     <q-input v-model="form.user_password" type="password" label="Senha" filled class="q-mt-sm">
-                        <template #prepend><q-icon name="lock" class="text-saudades" /></template>
+                        <template #prepend><q-icon name="lock" class="text-green-9" /></template>
                     </q-input>
                     <div class="text-caption text-grey-6 q-mt-xs" v-if="dlg.mode === 'edit'">
                         Deixe a senha em branco para não alterar.
@@ -112,12 +188,11 @@
 
                 <q-card-actions align="between" class="q-pa-md">
                     <q-btn flat label="Cancelar" v-close-popup />
-                    <q-btn class="bg-saudades text-white" :loading="saving"
+                    <q-btn class="bg-green-9 text-white" :loading="saving"
                         :label="dlg.mode === 'create' ? 'Criar' : 'Salvar'" @click="salvar" />
                 </q-card-actions>
             </q-card>
         </q-dialog>
-
     </q-page>
 </template>
 
@@ -133,11 +208,18 @@ const loading = computed(() => store.loading)
 const saving = computed(() => store.saving)
 
 const TIPO_LABEL = { 1: 'Cidadão', 2: 'Administrador', 3: 'DMER', 4: 'DOSU' }
-const tiposOptions = Object.entries(TIPO_LABEL).map(([id, label]) => ({
-    label, value: Number(id)
-}))
-function tipoNome(v) {
-    return TIPO_LABEL[Number(v)] ?? String(v ?? '')
+const tiposOptions = Object.entries(TIPO_LABEL).map(([id, label]) => ({ label, value: Number(id) }))
+function tipoNome(v) { return TIPO_LABEL[Number(v)] ?? String(v ?? '') }
+function tipoColor(v) {
+    const t = Number(v)
+    if (t === 2) return 'green-9'
+    if (t === 3) return 'indigo-7'
+    if (t === 4) return 'teal-7'
+    return 'grey-7'
+}
+function initials(name) {
+    const s = String(name || '').trim().split(/\s+/).slice(0, 2).map(p => p[0]?.toUpperCase() || '').join('')
+    return s || '?'
 }
 
 const statusOptions = [
@@ -156,27 +238,16 @@ const filtroValor = ref('')
 const filtroValorTipo = ref(null)
 const incluirInativos = ref(false)
 
-
 async function buscar() {
     pagination.value.page = 1
     const params = { field: filtroCampo.value, includeInactive: incluirInativos.value }
-    params.q = filtroCampo.value === 'user_tipo'
-        ? (filtroValorTipo.value ?? '')
-        : filtroValor.value
+    params.q = filtroCampo.value === 'user_tipo' ? (filtroValorTipo.value ?? '') : filtroValor.value
     await store.listar(params)
 }
 async function reload() {
     const params = { field: filtroCampo.value, includeInactive: incluirInativos.value }
-    params.q = filtroCampo.value === 'user_tipo'
-        ? (filtroValorTipo.value ?? '')
-        : filtroValor.value
+    params.q = filtroCampo.value === 'user_tipo' ? (filtroValorTipo.value ?? '') : filtroValor.value
     await store.listar(params)
-}
-
-function limparBusca() {
-    filtroValor.value = ''
-    filtroValorTipo.value = null
-    pagination.value.page = 1
 }
 
 const rows = computed(() => store.list)
@@ -224,7 +295,6 @@ function abrirNovo() {
     })
     dlg.open = true
 }
-
 function abrirEditar(row) {
     dlg.mode = 'edit'
     Object.assign(form, {
@@ -240,16 +310,11 @@ function abrirEditar(row) {
 
 function buildListParams() {
     const params = { field: filtroCampo.value, includeInactive: incluirInativos.value }
-    params.q = filtroCampo.value === 'user_tipo'
-        ? (filtroValorTipo.value ?? '')
-        : filtroValor.value
+    params.q = filtroCampo.value === 'user_tipo' ? (filtroValorTipo.value ?? '') : filtroValor.value
     return params
 }
+async function refreshList() { await store.listar(buildListParams()) }
 
-async function refreshList() {
-    await store.listar(buildListParams())
-}
-const recarregarAoFechar = ref(false)
 async function salvar() {
     try {
         const payload = {
@@ -259,7 +324,6 @@ async function salvar() {
             user_is_active: !!form.user_is_active,
             user_password: form.user_password
         }
-
         if (dlg.mode === 'create') {
             if (!payload.user_password) { $q.notify({ type: 'warning', message: 'Senha obrigatória' }); return }
             await store.criar({ ...payload, user_documento: form.user_documento })
@@ -270,10 +334,8 @@ async function salvar() {
             await store.atualizar(id, payload)
             $q.notify({ type: 'positive', message: 'Usuário atualizado' })
         }
-        recarregarAoFechar.value = true
         dlg.open = false
         await refreshList()
-        recarregarAoFechar.value = false
     } catch {
         $q.notify({ type: 'negative', message: 'Falha ao salvar' })
     }
@@ -283,30 +345,33 @@ onMounted(reload)
 </script>
 
 <style scoped>
-.q-page {
+.users-page {
     max-width: 1200px;
     margin: 0 auto;
 }
 
-.dlg-card {
-    width: 640px;
-    max-width: 95vw;
-    border-radius: 16px;
+.surface {
+    border-radius: 14px;
+    border: 1px solid #e0f2f1;
     overflow: hidden;
-    box-shadow: 0 10px 28px rgba(0, 0, 0, .12);
 }
 
-.bg-saudades {
-    background: #1B5E20;
+.btn-flat-green {
+    color: #1b5e20 !important;
 }
 
-/* verde escuro agradável */
-.text-saudades {
-    color: #1B5E20;
+.users-table :deep(thead th) {
+    background: #f1f8e9;
+    color: #1b5e20;
+    font-weight: 600;
 }
 
-.text-saudades-weak {
-    color: #2e7d32;
+.users-table :deep(.q-table__bottom) {
+    border-top: 1px solid #e0f2f1;
+}
+
+.nowrap {
+    white-space: nowrap;
 }
 
 .dlg-card {
@@ -320,13 +385,10 @@ onMounted(reload)
     box-shadow: 0 10px 28px rgba(0, 0, 0, .12);
 }
 
-/* realce leve em inputs filled */
 :deep(.q-field--filled .q-field__control) {
     border-radius: 12px;
 }
 
-
-/* amarelo */
 :deep(.q-field--filled .q-field__control:before) {
     border-bottom-color: rgba(27, 94, 32, .24);
 }
