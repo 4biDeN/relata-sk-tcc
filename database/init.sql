@@ -83,24 +83,8 @@ create table if not exists t_ocorrencia (
 create table if not exists t_ocorrencia_historico (
     historico_id bigserial primary key,
     ocorrencia_id integer not null references t_ocorrencia(ocorrencia_id),
-    acao text not null check (
-        acao in ('create', 'update', 'delete', 'attach', 'detach')
-    ),
-    entidade text not null check (
-        entidade in (
-            'ocorrencia',
-            'imagem',
-            'comentario',
-            'local',
-            'status',
-            'prioridade',
-            'atribuicao',
-            'titulo',
-            'descricao',
-            'anonima',
-            'excluida'
-        )
-    ),
+    acao text not null check (acao in ('create', 'update', 'delete', 'attach', 'detach')),
+    entidade text not null check (entidade in ( 'ocorrencia','imagem','comentario','local','status','prioridade','atribuicao','titulo','descricao','anonima','excluida')),
     campo text,
     valor_anterior text,
     valor_novo text,
