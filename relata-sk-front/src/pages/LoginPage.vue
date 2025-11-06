@@ -3,13 +3,13 @@
     <div class="frame">
       <div class="flex flex-center q-mb-md">
         <q-avatar size="80px">
-          <img src="~assets/muller-cj.png">
+          <img src="~assets/saudades-logo.png">
         </q-avatar>
       </div>
 
       <q-card flat bordered class="q-pa-lg card">
         <div class="text-center q-mb-md">
-          <div class="text-h5 text-positive">Bem-vindo</div>
+          <div class="text-h5 text-green-9">Bem-vindo</div>
           <div class="text-subtitle2 text-grey-7">Acesse com seu Documento e Senha</div>
         </div>
 
@@ -27,16 +27,16 @@
             </template>
           </q-input>
 
-          <q-btn type="submit" label="Entrar" class="full-width q-mt-md" :loading="loading" unelevated color="positive"
+          <q-btn type="submit" label="Entrar" class="full-width q-mt-md" :loading="loading" unelevated color="green-9"
             text-color="white" />
         </q-form>
 
         <div class="row items-center q-mt-md q-gutter-sm">
-          <q-btn flat no-caps size="sm" class="text-positive" @click="router.push('/forgot')">
+          <q-btn flat no-caps size="S" class="text-green-9" @click="router.push('/forgot')">
             Esqueci minha senha
           </q-btn>
           <q-space />
-          <q-btn no-caps size="sm" outline color="amber-8" class="q-px-md" @click="router.push('/register')"
+          <q-btn no-caps color="amber-8" class="q-px-md" @click="router.push('/register')"
             label="Criar conta" />
         </div>
       </q-card>

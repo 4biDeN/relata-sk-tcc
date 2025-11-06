@@ -90,6 +90,18 @@ const routes = [
                 component: () => import('src/pages/admin/NotificationsAdmin.vue'),
                 props: { scope: 'admin' },
             },
+            {
+                path: 'dashboard',
+                name: 'admin.dashboard',
+                component: () => import('src/pages/admin/DashboardPage.vue'),
+                props: { scope: 'admin' },
+            },
+            {
+                path: 'mapaocorrencias',
+                name: 'admin.mapa',
+                component: () => import('src/pages/admin/MapaOcorrencias.vue'),
+                props: { scope: 'admin' },
+            },
         ],
     },
 ]

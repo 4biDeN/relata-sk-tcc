@@ -84,7 +84,6 @@ const createOcorrencia = async (data) => {
             data.ocorrencia_prioridade ?? 2,
             localId,
         ];
-        console.log("data\n", data)
         const ocorrenciaRes = await client.query(insOcSql, insOcParams);
         const ocorrencia = ocorrenciaRes.rows[0];
 
@@ -529,7 +528,6 @@ const getOcorrenciasProximas = async ({
     limit = 20,
     offset = 0,
 }) => {
-    // saneamento básico
     const R = Math.max(0.1, Math.min(Number(radius_km) || 3, 50));
     const LIMIT = Math.max(1, Math.min(Number(limit) || 20, 100));
     const OFFSET = Math.max(0, Number(offset) || 0);

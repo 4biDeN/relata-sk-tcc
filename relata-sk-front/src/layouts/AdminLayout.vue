@@ -20,7 +20,7 @@
         <q-drawer v-model="leftDrawerOpen" :mini="miniState" :breakpoint="$q.screen.sizes.md" :width="260"
             :mini-width="64" bordered class="bg-grey-1" show-if-above>
             <q-list padding>
-                <q-item to="/admin" clickable v-ripple exact :active="$route.path === '/admin'"
+                <q-item to="/admin/dashboard" clickable v-ripple exact :active="$route.path === '/admin'"
                     active-class="item-active">
                     <q-item-section avatar><q-icon name="dashboard" /></q-item-section>
                     <q-item-section>Dashboard</q-item-section>
@@ -36,6 +36,12 @@
                     active-class="item-active">
                     <q-item-section avatar><q-icon name="group" /></q-item-section>
                     <q-item-section>Usuários</q-item-section>
+                </q-item>
+
+                <q-item to="/admin/mapaocorrencias" clickable v-ripple
+                    :active="$route.path.startsWith('/admin/mapaocorrencias')" active-class="item-active">
+                    <q-item-section avatar><q-icon name="location_on" /></q-item-section>
+                    <q-item-section>Mapa de Ocorrências</q-item-section>
                 </q-item>
 
                 <q-separator spaced />

@@ -5,8 +5,6 @@
                 <q-btn flat dense round icon="menu" @click="toggleDrawer" class="text-white" />
                 <q-toolbar-title class="row items-center no-wrap">
                     <q-icon name="place" size="22px" class="q-mr-sm" />
-                    <span class="app-title">Relata Saudades</span>
-                    <span class="title-sep"> - </span>
                     <span class="page-title">{{ activeLabel }}</span>
                 </q-toolbar-title>
 
@@ -39,7 +37,7 @@
                 <q-item to="/home/ocorrencias/perto" clickable v-ripple
                     :active="$route.path.startsWith('/home/ocorrencias/perto')" active-class="item-active">
                     <q-item-section avatar><q-icon name="my_location" /></q-item-section>
-                    <q-item-section>Ocorrências próximas</q-item-section>
+                    <q-item-section>Ocorrências Próximas</q-item-section>
                 </q-item>
 
                 <q-item to="/home/notificacoes" clickable v-ripple

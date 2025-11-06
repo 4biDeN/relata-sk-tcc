@@ -3,7 +3,7 @@
         <div class="frame">
             <div class="flex flex-center q-mb-md">
                 <q-avatar size="80px">
-                    <img src="~assets/muller-cj.png" alt="Logo">
+                    <img src="~assets/saudades-logo.png">
                 </q-avatar>
             </div>
 
@@ -29,9 +29,9 @@
                         :loading="loading" :disable="loading" unelevated text-color="white" />
 
                     <div class="row items-center justify-between q-mt-md">
-                        <q-btn flat no-caps size="sm" class="btn-flat-green" @click="router.push('/login')"
+                        <q-btn flat no-caps size="" class="btn-flat-green" @click="router.push('/login')"
                             icon="arrow_back" label="Voltar ao login" />
-                        <q-btn flat no-caps size="sm" class="btn-flat-green" icon="help_outline"
+                        <q-btn flat no-caps size="" class="btn-flat-green" icon="help_outline"
                             label="Precisa de ajuda?" @click="abrirAjuda" />
                     </div>
                 </q-form>

@@ -3,12 +3,6 @@
         <q-card flat class="surface-card">
             <q-card-section class="q-pb-sm">
                 <div class="row items-end q-col-gutter-md">
-                    <div class="col-12 col-sm-6 col-md-3">
-                        <div class="text-caption text-grey-7 q-mb-xs">Raio (km)</div>
-                        <q-slider v-model="radiusKm" :min="0.5" :max="20" :step="0.5" label switch-label-side
-                            :label-value="`${radiusKm} km`" color="green-9" track-size="6px" />
-                    </div>
-
                     <div class="col-6 col-md-3">
                         <q-select v-model="statusSel" :options="statusOptions" label="Status" dense clearable emit-value
                             map-options outlined color="green-9" />
@@ -21,18 +15,12 @@
 
                     <div class="col-12 col-md-6">
                         <div class="cta-row">
-                            <q-btn class="btn-compact grow" color="green-9" icon="my_location" label="Atualizar posição"
-                                :loading="gettingLocation" unelevated no-caps dense size="sm"
-                                @click="usarMinhaLocalizacao" />
                             <q-btn class="btn-compact" flat icon="refresh" label="Atualizar" no-caps dense size="sm"
-                                @click="carregar" />
+                                :loading="loading" @click="carregar" />
+                            <q-badge color="green-9" text-color="white" class="q-py-xs q-px-sm">
+                                {{ rows.length }} resultado(s)
+                            </q-badge>
                         </div>
-                    </div>
-
-                    <div class="col-12 col-md-6 text-right cta-count">
-                        <q-badge color="green-9" text-color="white" class="q-py-xs q-px-sm">
-                            {{ rows.length }} resultado(s)
-                        </q-badge>
                     </div>
                 </div>
             </q-card-section>
@@ -47,14 +35,7 @@
                         </div>
                         <div class="leaflet-wrap card-outline">
                             <div ref="mapEl" class="leaflet-map"></div>
-                            <div v-if="!hasUserPos" class="empty-overlay column items-center justify-center">
-                                <q-icon name="my_location" size="36px" class="text-grey-6 q-mb-sm" />
-                                <div class="text-grey-7 q-mb-sm">
-                                    Ative sua localização para ver ocorrências próximas
-                                </div>
-                                <q-btn color="green-9" label="Ativar localização" @click="usarMinhaLocalizacao"
-                                    :loading="gettingLocation" unelevated />
-                            </div>
+                            <q-inner-loading :showing="loading"><q-spinner size="32px" /></q-inner-loading>
                         </div>
                     </div>
 
@@ -72,7 +53,7 @@
 
                             <template v-else-if="!rows.length">
                                 <div class="q-pa-lg text-center text-grey-6">
-                                    Nenhuma ocorrência encontrada nesse raio.
+                                    Nenhuma ocorrência encontrada.
                                 </div>
                             </template>
 
@@ -105,7 +86,6 @@
                                     </q-item-section>
 
                                     <q-item-section side top class="text-right">
-                                        <div class="text-weight-medium">{{ fmtKm(r.distance_km) }}</div>
                                         <q-item-label caption>{{ formatDateISOToBR(r.ocorrencia_data) }}</q-item-label>
                                     </q-item-section>
                                 </q-item>
@@ -129,7 +109,9 @@ import 'leaflet/dist/leaflet.css'
 const router = useRouter()
 const pertoStore = useOcorrenciasPertoStore()
 
-const radiusKm = ref(3)
+const CENTER = { lat: -26.9261, lng: -53.0045 }
+const RADIUS_KM = 20
+
 const statusSel = ref(null)
 const prioridadeSel = ref(null)
 
@@ -150,56 +132,64 @@ const prioridadeOptions = [
 const rows = computed(() => pertoStore.rows)
 const loading = computed(() => pertoStore.loading)
 
-const gettingLocation = ref(false)
-const userPos = ref({ lat: null, lng: null })
-const hasUserPos = computed(() => Number.isFinite(userPos.value.lat) && Number.isFinite(userPos.value.lng))
+const mapEl = ref(null)
+let map = null
+let markersLayer = null
 
-const RedMarkerIcon = new L.Icon({
-    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
-    iconRetinaUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
-    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowSize: [41, 41]
-})
+function initMap() {
+    if (map || !mapEl.value) return
+    map = L.map(mapEl.value, { zoomControl: true }).setView([CENTER.lat, CENTER.lng], 12)
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '' }).addTo(map)
+    markersLayer = L.layerGroup().addTo(map)
+    setTimeout(() => map?.invalidateSize(), 150)
+}
 
-async function usarMinhaLocalizacao() {
-    if (!('geolocation' in navigator)) {
-        Notify.create({ type: 'warning', message: 'Seu dispositivo não suporta geolocalização.' })
-        return
+function redrawMarkers() {
+    if (!map || !markersLayer) return
+    markersLayer.clearLayers()
+    const bounds = []
+    rows.value.forEach(r => {
+        const lat = Number(r.local_latitude)
+        const lng = Number(r.local_longitude)
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return
+        const m = L.marker([lat, lng])
+        m.bindPopup(`
+      <div style="min-width:210px">
+        <div style="font-weight:600;margin-bottom:4px">${escapeHtml(r.ocorrencia_titulo)}</div>
+        <div style="color:#546e7a">${escapeHtml(r.local_rua || '')}, ${escapeHtml(r.local_bairro || '')}</div>
+        <a href="/#/home/ocorrencias/${r.ocorrencia_id}" style="display:inline-block;margin-top:8px;background:#1b5e20;color:#fff;padding:6px 10px;border-radius:8px;text-decoration:none">Ver detalhes</a>
+      </div>
+    `)
+        m.addTo(markersLayer)
+        bounds.push([lat, lng])
+    })
+    if (bounds.length) {
+        map.fitBounds(L.latLngBounds(bounds), { padding: [24, 24] })
+    } else {
+        map.setView([CENTER.lat, CENTER.lng], 12)
     }
-    gettingLocation.value = true
-    navigator.geolocation.getCurrentPosition(
-        async (pos) => {
-            userPos.value = { lat: pos.coords.latitude, lng: pos.coords.longitude }
-            gettingLocation.value = false
-            await nextTickMapInit()
-            carregar()
-        },
-        () => {
-            gettingLocation.value = false
-            Notify.create({ type: 'warning', message: 'Não foi possível obter sua localização.' })
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-    )
+}
+
+function escapeHtml(s) {
+    return String(s || '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]))
 }
 
 async function carregar() {
-    if (!hasUserPos.value) return
     try {
-        const { lat, lng } = userPos.value
         const params = {
-            lat, lng,
-            radius_km: radiusKm.value,
-            limit: 50
+            lat: CENTER.lat,
+            lng: CENTER.lng,
+            radius_km: RADIUS_KM,
+            limit: 100
         }
         if (statusSel.value != null) params.status = statusSel.value
         if (prioridadeSel.value != null) params.prioridade = prioridadeSel.value
+
         await pertoStore.fetchNearby(params)
+        await nextTick()
         redrawMarkers()
     } catch {
-        Notify.create({ type: 'negative', message: 'Falha ao carregar ocorrências próximas.' })
+        Notify.create({ type: 'negative', message: 'Falha ao carregar ocorrências.' })
     }
 }
 
@@ -214,9 +204,7 @@ function formatDateISOToBR(v) {
     return `${dd}/${mm}/${yyyy} ${hh}:${mi}`
 }
 
-function norm(s) {
-    return String(s || '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim()
-}
+function norm(s) { return String(s || '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim() }
 const STATUS_STYLES = {
     'aberto': { color: 'orange-7' },
     'em analise': { color: 'indigo-7' },
@@ -224,97 +212,22 @@ const STATUS_STYLES = {
     'resolvido': { color: 'positive' },
     'fechado': { color: 'green-8' }
 }
-function statusStyle(name) {
-    return STATUS_STYLES[norm(name)] || { color: 'grey-6' }
-}
+function statusStyle(name) { return STATUS_STYLES[norm(name)] || { color: 'grey-6' } }
 
-const mapEl = ref(null)
-let map = null
-let markersLayer = null
-let userLayer = null
+function irDetalhe(id) { router.push(`/admin/ocorrencias/${id}`) }
 
-function initMap() {
-    if (map || !mapEl.value) return
-    const center = hasUserPos.value ? [userPos.value.lat, userPos.value.lng] : [-26.9261, -53.0045]
-    map = L.map(mapEl.value, { zoomControl: true }).setView(center, hasUserPos.value ? 14 : 13)
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '' }).addTo(map)
-    markersLayer = L.layerGroup().addTo(map)
-    userLayer = L.layerGroup().addTo(map)
-    drawUser()
-    setTimeout(() => map?.invalidateSize(), 150)
-}
 
-function drawUser() {
-    if (!map || !userLayer) return
-    userLayer.clearLayers()
-    if (!hasUserPos.value) return
-    const { lat, lng } = userPos.value
-    L.marker([lat, lng], { icon: RedMarkerIcon, title: 'Você está aqui' }).addTo(userLayer)
-    L.circle([lat, lng], {
-        radius: radiusKm.value * 1000,
-        color: '#1b5e20',
-        weight: 2,
-        fillColor: '#2e7d32',
-        fillOpacity: 0.08
-    }).addTo(userLayer)
-}
-
-function redrawMarkers() {
-    if (!map || !markersLayer) return
-    markersLayer.clearLayers()
-    rows.value.forEach(r => {
-        if (!Number.isFinite(r.local_latitude) || !Number.isFinite(r.local_longitude)) return
-        const m = L.marker([r.local_latitude, r.local_longitude])
-        m.bindPopup(`
-      <div style="min-width:210px">
-        <div style="font-weight:600;margin-bottom:4px">${escapeHtml(r.ocorrencia_titulo)}</div>
-        <div style="color:#546e7a">${escapeHtml(r.local_rua || '')}, ${escapeHtml(r.local_bairro || '')}</div>
-        <div style="margin-top:6px;color:#546e7a">Distância: ${fmtKm(r.distance_km)}</div>
-        <a href="/#/home/ocorrencias/${r.ocorrencia_id}" style="display:inline-block;margin-top:8px;background:#1b5e20;color:#fff;padding:6px 10px;border-radius:8px;text-decoration:none">Ver detalhes</a>
-      </div>
-    `)
-        m.addTo(markersLayer)
-    })
-}
-
-function escapeHtml(s) {
-    return String(s || '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]))
-}
-
-async function nextTickMapInit() {
-    await nextTick()
-    if (!map) initMap()
-    else if (hasUserPos.value) map.setView([userPos.value.lat, userPos.value.lng], Math.max(map.getZoom(), 14))
-    drawUser()
-}
-
-onMounted(() => {
+onMounted(async () => {
     initMap()
-    usarMinhaLocalizacao()
+    await carregar()
 })
+
 onBeforeUnmount(() => {
     if (map) { map.off(); map.remove(); map = null }
     markersLayer = null
-    userLayer = null
 })
 
-let debounceTimer = null
-watch([radiusKm, statusSel, prioridadeSel], () => {
-    drawUser()
-    if (!hasUserPos.value) return
-    clearTimeout(debounceTimer)
-    debounceTimer = setTimeout(() => carregar(), 280)
-})
-
-function irDetalhe(id) {
-    router.push(`/home/ocorrencias/${id}`)
-}
-
-function fmtKm(v) {
-    const n = Number(v)
-    if (!Number.isFinite(n)) return '—'
-    return `${n.toFixed(2)} km`
-}
+watch([statusSel, prioridadeSel], () => { carregar() })
 </script>
 
 <style scoped>
@@ -337,10 +250,6 @@ function fmtKm(v) {
     border-radius: 12px;
 }
 
-.btn-flat-green {
-    color: #1b5e20 !important;
-}
-
 .leaflet-wrap {
     position: relative;
     border-radius: 12px;
@@ -353,19 +262,6 @@ function fmtKm(v) {
     height: 420px;
 }
 
-.empty-overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(255, 255, 255, .92);
-    text-align: center;
-    padding: 16px;
-}
-
-.soft-badge {
-    background: #e8f5e9;
-    color: #1b5e20;
-}
-
 .result-item:hover {
     background: #f1f8e9;
 }
@@ -374,20 +270,9 @@ function fmtKm(v) {
     object-fit: cover;
 }
 
-@media (max-width: 1023px) {
-    .leaflet-map {
-        height: 360px;
-    }
-}
-
-@media (max-width: 599px) {
-    .leaflet-map {
-        height: 280px;
-    }
-
-    .surface-card :deep(.q-card__section) {
-        padding: 12px;
-    }
+.soft-badge {
+    background: #e8f5e9;
+    color: #1b5e20;
 }
 
 .cta-row {
@@ -414,21 +299,19 @@ function fmtKm(v) {
     min-width: 0;
 }
 
+@media (max-width: 1023px) {
+    .leaflet-map {
+        height: 360px;
+    }
+}
 
 @media (max-width: 599px) {
-    .cta-row {
-        gap: 6px;
+    .leaflet-map {
+        height: 280px;
     }
 
-    .btn-compact {
-        height: 34px;
-        padding: 0 8px;
+    .surface-card :deep(.q-card__section) {
+        padding: 12px;
     }
-
-    .cta-count {
-        text-align: left;
-        margin-top: 6px;
-    }
-
 }
 </style>

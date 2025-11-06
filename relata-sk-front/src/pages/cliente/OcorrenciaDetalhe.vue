@@ -20,25 +20,37 @@
                 <q-separator />
 
                 <div v-show="tab === 'detalhe'">
-                    <q-card-section class="row items-center q-col-gutter-sm">
-                        <div class="col">
-                            <div class="text-h6 q-mb-xs">{{ item.ocorrencia_titulo }}</div>
-                            <div class="row items-center q-gutter-sm">
-                                <q-chip dense square :color="statusChipColor(item.ocorrencia_status)" text-color="white"
-                                    class="pill">
-                                    {{ labelStatus(item.ocorrencia_status) }}
-                                </q-chip>
-                                <q-chip size="sm" :color="item.ocorrencia_anonima ? 'grey-7' : 'positive'"
-                                    text-color="white" outline>
-                                    {{ item.ocorrencia_anonima ? 'Anônima' : 'Identificada' }}
-                                </q-chip>
-                            </div>
-                        </div>
+                    <q-card-section class="q-col-gutter-sm">
+                        <div class="row items-start q-gutter-sm detail-header">
+                            <div class="col-12 col-sm">
+                                <div class="text-h6 q-mb-xs detail-title">
+                                    {{ item.ocorrencia_titulo }}
+                                </div>
 
-                        <div class="col-auto row items-center q-gutter-sm">
-                            <q-btn dense flat icon="content_copy" :label="`Protocolo: ${item.ocorrencia_protocolo}`"
-                                @click="copiarProtocolo" />
-                            <q-btn flat icon="arrow_back" label="Voltar" @click="$router.back()" />
+                                <div class="row items-center q-gutter-xs wrap">
+                                    <q-chip dense square :color="statusChipColor(item.ocorrencia_status)"
+                                        text-color="white" class="pill">
+                                        {{ labelStatus(item.ocorrencia_status) }}
+                                    </q-chip>
+                                    <q-chip size="sm" :color="item.ocorrencia_anonima ? 'grey-7' : 'positive'"
+                                        text-color="white" outline>
+                                        {{ item.ocorrencia_anonima ? 'Anônima' : 'Identificada' }}
+                                    </q-chip>
+                                </div>
+
+                                <div class="row items-center q-gutter-xs q-mt-xs protocol-line">
+                                    <q-icon name="fingerprint" size="16px" class="text-grey-7" />
+                                    <div class="text-caption text-grey-7">
+                                        PROTOCOLO: {{ item.ocorrencia_protocolo }}
+                                    </div>
+                                    <q-btn dense round flat icon="content_copy" @click="copiarProtocolo" size="sm"
+                                        class="q-ml-xs" />
+                                </div>
+                            </div>
+
+                            <div class="col-12 col-sm-auto right-actions" v-show="!$q.screen.lt.sm">
+                                <q-btn flat icon="arrow_back" label="Voltar" @click="$router.back()" />
+                            </div>
                         </div>
                     </q-card-section>
 
@@ -172,22 +184,22 @@
                         </div>
 
                         <q-inner-loading :showing="histLoading"><q-spinner size="32px" /></q-inner-loading>
-
-                        <q-timeline color="green-9" layout="loose" side="right" v-if="historicoFiltrado.length">
+                        <q-timeline color="green-9" :layout="$q.screen.lt.sm ? 'dense' : 'loose'" side="right"
+                            class="hist-timeline" v-if="historicoFiltrado.length">
                             <q-timeline-entry v-for="h in historicoFiltrado" :key="h.historico_id"
                                 :subtitle="formatHistDate(h.changed_at)" :icon="acaoIcon(h)"
-                                :color="entidadeColor(h.entidade)">
+                                :color="entidadeColor(h.entidade)" class="hist-entry">
                                 <template #title>
-                                    <div class="row items-center no-wrap">
+                                    <div class="hist-title">
                                         <q-chip dense square :color="entidadeColor(h.entidade)" text-color="white"
-                                            class="pill q-mr-sm">
+                                            class="pill">
                                             {{ labelEntidade(h.entidade) }}
                                         </q-chip>
-                                        <span class="text-weight-bold">{{ labelAcao(h.acao) }}</span>
+                                        <span class="hist-action text-weight-bold">{{ labelAcao(h.acao) }}</span>
                                     </div>
                                 </template>
 
-                                <div class="text-body2">
+                                <div class="hist-body text-body2">
                                     <template v-if="h.entidade === 'status'">
                                         <q-chip dense square :color="statusChipColor(h.valor_novo)" text-color="white"
                                             class="pill">
@@ -228,7 +240,7 @@
                                         </div>
                                     </template>
 
-                                    <div class="text-caption text-grey-6 q-mt-xs">
+                                    <div class="hist-meta text-caption text-grey-6 q-mt-xs">
                                         {{ usuarioFmt(h) }}
                                         <template v-if="h.entidade_id"> • ID: {{ h.entidade_id }}</template>
                                     </div>
@@ -737,5 +749,28 @@ watch(() => route.params.id, async (newId, oldId) => {
 .comentarios-list :deep(.q-avatar) {
     font-weight: 700;
     font-size: 14px;
+}
+
+.detail-title {
+    word-break: break-word;
+    line-height: 1.15;
+}
+
+.protocol-line {
+    align-items: center;
+}
+
+@media (max-width: 600px) {
+    .detail-header {
+        flex-direction: column;
+    }
+
+    .right-actions {
+        display: none !important;
+    }
+
+    .leaflet-map {
+        height: 240px;
+    }
 }
 </style>

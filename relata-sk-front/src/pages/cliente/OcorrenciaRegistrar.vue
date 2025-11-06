@@ -1,7 +1,7 @@
 ﻿<template>
     <q-page class="q-pa-md">
         <q-stepper v-model="step" @update:model-value="onStepChange" flat animated header-nav alternative-labels
-            :contracted="$q.screen.lt.sm" active-color="green-9" done-color="green-7" inactive-color="grey-5"
+            :contracted="$q.screen.width < 380" active-color="green-9" done-color="green-7" inactive-color="grey-5"
             class="stepper-elev">
             <q-step :name="1" title="Detalhes" caption="Detalhes da Ocorrência" icon="description" :done="step > 1">
                 <q-card flat bordered class="section-card q-pa-md">
@@ -146,16 +146,6 @@
             </q-step>
         </q-stepper>
 
-        <q-page-sticky v-if="isMobile" position="bottom" expand class="sticky-cta shadow-2">
-            <div class="row items-center">
-                <q-btn flat label="Voltar" color="green-9" :disable="step === 1" @click="step--" />
-                <q-space />
-                <q-btn v-if="step < 3" color="green-9" label="Próximo"
-                    :disable="(step === 1 && !detalhesOk) || (step === 2 && !coordsOk)" @click="step++" unelevated />
-                <q-btn v-else color="green-9" :loading="creating" :disable="!podeSalvar" label="Enviar" @click="salvar"
-                    unelevated />
-            </div>
-        </q-page-sticky>
     </q-page>
 </template>
 
@@ -195,14 +185,14 @@ const router = useRouter()
 
 
 function onStepChange(to) {
-  const from = currentStep.value
+    const from = currentStep.value
 
-  if (to > from) {
-    if (from === 1 && !detalhesOk.value) { step.value = from; return }
-    if (from === 2 && !coordsOk.value)   { step.value = from; return }
-  }
+    if (to > from) {
+        if (from === 1 && !detalhesOk.value) { step.value = from; return }
+        if (from === 2 && !coordsOk.value) { step.value = from; return }
+    }
 
-  currentStep.value = to
+    currentStep.value = to
 }
 
 const form = reactive({
@@ -680,5 +670,40 @@ async function salvar() {
 
 .q-card-actions {
     padding: 4px;
+}
+
+@media (max-width: 599px) {
+    .stepper-elev :deep(.q-stepper__header) {
+        padding: 0 8px;
+    }
+
+    .stepper-elev :deep(.q-stepper__tab) {
+        flex: 1 1 33.333%;
+        max-width: 33.333%;
+    }
+
+    .stepper-elev :deep(.q-stepper__title) {
+        font-size: 12px;
+        line-height: 1.15;
+        font-weight: 600;
+        text-align: center;
+        white-space: nowrap;
+    }
+
+    .stepper-elev :deep(.q-stepper__caption) {
+        font-size: 11px;
+        line-height: 1.1;
+        opacity: .8;
+        text-align: center;
+        white-space: nowrap;
+    }
+
+    .stepper-elev :deep(.q-stepper__line) {
+        margin: 0 6px;
+    }
+
+    .stepper-elev :deep(.q-stepper__dot) {
+        transform: scale(.9);
+    }
 }
 </style>

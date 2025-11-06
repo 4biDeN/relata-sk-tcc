@@ -3,12 +3,12 @@
         <div class="frame">
             <div class="flex flex-center q-mb-md">
                 <q-avatar size="80px">
-                    <img src="~assets/muller-cj.png">
+                    <img src="~assets/saudades-logo.png">
                 </q-avatar>
             </div>
 
             <q-card class="q-pa-lg card" flat bordered>
-                <div class="text-h6 q-mb-md text-center text-positive">Criar conta</div>
+                <div class="text-h6 q-mb-md text-center text-green-9">Criar conta</div>
                 <q-form @submit="onSubmit" greedy>
                     <q-input v-model="form.user_username" label="Usuário" :rules="[req]" class="q-mb-sm" outlined>
                         <template #prepend><q-icon name="account_circle" /></template>
@@ -32,11 +32,11 @@
                     </q-input>
                     <q-linear-progress :value="strength.value" class="q-mt-xs" :color="strength.color" rounded
                         size="6px" />
-                    <q-btn type="submit" label="Criar conta" color="positive" class="full-width q-mt-md"
+                    <q-btn type="submit" label="Criar conta" color="green-9" class="full-width q-mt-md"
                         :loading="loading" :disable="loading" unelevated text-color="white" />
                 </q-form>
                 <div class="row items-center q-mt-md">
-                    <q-btn flat no-caps size="sm" class="text-amber-8" @click="router.push('/login')">Já tenho
+                    <q-btn flat no-caps  class="text-amber-8" @click="router.push('/login')">Já tenho
                         conta</q-btn>
                 </div>
             </q-card>
