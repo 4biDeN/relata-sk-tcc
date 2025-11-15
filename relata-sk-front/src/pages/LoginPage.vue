@@ -59,7 +59,7 @@ const auth = useAuthStore()
 
 function defaultPathForRole(role) {
   const r = Number(role)
-  return [2, 3, 4].includes(r) ? '/admin/ocorrencias' : '/home/ocorrencias'
+  return [2, 3, 4].includes(r) ? '/admin/dashboard' : '/home/ocorrencias'
 }
 
 const onSubmit = async () => {

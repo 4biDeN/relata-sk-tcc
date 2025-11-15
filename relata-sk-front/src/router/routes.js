@@ -83,6 +83,7 @@ const routes = [
                 path: 'usuarios',
                 name: 'admin.usuarios',
                 component: () => import('src/pages/admin/UsuariosAdmin.vue'),
+                meta: { roles: [2] },
             },
             {
                 path: 'notificacoes',

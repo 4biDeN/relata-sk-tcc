@@ -17,7 +17,7 @@
                         class="q-mb-sm" outlined>
                         <template #prepend><q-icon name="mail" /></template>
                     </q-input>
-                    <q-input v-model="documento" label="Documento" mask="###.###.###-##" fill-mask
+                    <q-input v-model="form.user_documento" label="Documento" mask="###.###.###-##" fill-mask
                         :unmasked-value="true" class="q-mb-sm" :rules="[v => !!v || 'Obrigatório']" outlined
                         autocomplete="username">
                         <template #prepend><q-icon name="person" /></template>
@@ -36,7 +36,7 @@
                         :loading="loading" :disable="loading" unelevated text-color="white" />
                 </q-form>
                 <div class="row items-center q-mt-md">
-                    <q-btn flat no-caps  class="text-amber-8" @click="router.push('/login')">Já tenho
+                    <q-btn flat no-caps class="text-amber-8" @click="router.push('/login')">Já tenho
                         conta</q-btn>
                 </div>
             </q-card>

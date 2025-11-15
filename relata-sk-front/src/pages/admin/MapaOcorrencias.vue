@@ -157,7 +157,7 @@ function redrawMarkers() {
       <div style="min-width:210px">
         <div style="font-weight:600;margin-bottom:4px">${escapeHtml(r.ocorrencia_titulo)}</div>
         <div style="color:#546e7a">${escapeHtml(r.local_rua || '')}, ${escapeHtml(r.local_bairro || '')}</div>
-        <a href="/#/home/ocorrencias/${r.ocorrencia_id}" style="display:inline-block;margin-top:8px;background:#1b5e20;color:#fff;padding:6px 10px;border-radius:8px;text-decoration:none">Ver detalhes</a>
+        <a href="/#/admin/ocorrencias/${r.ocorrencia_id}" style="display:inline-block;margin-top:8px;background:#1b5e20;color:#fff;padding:6px 10px;border-radius:8px;text-decoration:none">Ver detalhes</a>
       </div>
     `)
         m.addTo(markersLayer)

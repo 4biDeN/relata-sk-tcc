@@ -32,17 +32,17 @@
                     <q-item-section>Ocorrências</q-item-section>
                 </q-item>
 
-                <q-item to="/admin/usuarios" clickable v-ripple :active="$route.path.startsWith('/admin/usuarios')"
-                    active-class="item-active">
-                    <q-item-section avatar><q-icon name="group" /></q-item-section>
-                    <q-item-section>Usuários</q-item-section>
-                </q-item>
-
                 <q-item to="/admin/mapaocorrencias" clickable v-ripple
                     :active="$route.path.startsWith('/admin/mapaocorrencias')" active-class="item-active">
                     <q-item-section avatar><q-icon name="location_on" /></q-item-section>
                     <q-item-section>Mapa de Ocorrências</q-item-section>
                 </q-item>
+
+                <q-item v-if="isAdmin" to="/admin/usuarios" clickable v-ripple
+                    :active="$route.path.startsWith('/admin/usuarios')" active-class="item-active">
+                    <q-item-section avatar><q-icon name="group" /></q-item-section>
+                    <q-item-section>Usuários</q-item-section>
+                </q-item> 
 
                 <q-separator spaced />
 
@@ -68,6 +68,7 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useQuasar, Notify } from 'quasar'
 import { useNotificacaoStore } from 'src/stores/notifications'
+import { useAuthStore } from 'src/stores/auth'
 
 const $q = useQuasar()
 const router = useRouter()
@@ -79,8 +80,16 @@ const miniState = ref($q.screen.gt.md)
 const store = useNotificacaoStore()
 const unread = computed(() => store.unreadCount)
 
+const auth = useAuthStore()
+const userRole = computed(() =>
+    Number(auth.user?.tipo) ||
+    Number(localStorage.getItem('user_tipo'))
+)
+const isAdmin = computed(() => userRole.value === 2)
+
 const activeLabel = computed(() => {
     const p = route.path || ''
+    if (p.startsWith('/admin/dashboard')) return 'Dashboard'
     if (p.startsWith('/admin/notificacoes')) return 'Notificações'
     if (p.startsWith('/admin/ocorrencias')) return 'Ocorrências'
     if (p.startsWith('/admin/usuarios')) return 'Usuários'

@@ -117,8 +117,8 @@
             </q-card-section>
         </q-card>
 
-        <q-dialog v-model="dlg.open" persistent>
-            <q-card class="dlg-card saq-elev" @keyup.esc="dlg.open = false">
+        <q-dialog v-model="dlg.open" no-backdrop-dismiss>
+            <q-card class="dlg-card saq-elev">
                 <q-bar class="bg-green-9 text-white rounded-t-xl">
                     <div class="text-subtitle1">
                         {{ dlg.mode === 'create' ? 'Novo usuário' : 'Editar usuário' }}
@@ -173,12 +173,23 @@
 
                 <q-card-section class="q-pt-sm q-pb-sm">
                     <div class="text-caption text-green-8">Segurança</div>
-                    <q-input v-model="form.user_documento" label="Documento" filled :disable="dlg.mode === 'edit'">
+                    <q-input v-model="form.user_documento" label="Documento" filled mask="###.###.###-##" fill-mask
+                        :unmasked-value="true" :disable="dlg.mode === 'edit'">
                         <template #prepend><q-icon name="badge" class="text-green-9" /></template>
                     </q-input>
-                    <q-input v-model="form.user_password" type="password" label="Senha" filled class="q-mt-sm">
-                        <template #prepend><q-icon name="lock" class="text-green-9" /></template>
+                    <q-input v-model="form.user_password" :type="showPassword ? 'text' : 'password'" label="Senha"
+                        filled class="q-mt-sm" :rules="passwordRules">
+                        <template #prepend>
+                            <q-icon name="lock" class="text-green-9" />
+                        </template>
+
+                        <template #append>
+                            <q-icon :name="showPassword ? 'visibility_off' : 'visibility'" class="cursor-pointer"
+                                @click="showPassword = !showPassword" />
+                        </template>
                     </q-input>
+                    <q-linear-progress :value="passwordStrength.value" class="q-mt-xs" :color="passwordStrength.color"
+                        rounded size="6px" />
                     <div class="text-caption text-grey-6 q-mt-xs" v-if="dlg.mode === 'edit'">
                         Deixe a senha em branco para não alterar.
                     </div>
@@ -197,7 +208,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { useUsuariosStore } from 'src/stores/usuarios'
 
@@ -282,6 +293,62 @@ const form = reactive({
     user_documento: '',
     user_password: ''
 })
+
+const showPassword = ref(false)
+
+const passRequired = v => {
+    if (dlg.mode === 'edit' && !v) return true
+    return !!v || 'Senha obrigatória'
+}
+const passLen = v => {
+    if (!v && dlg.mode === 'edit') return true
+    return (v && v.length >= 8) || 'Mínimo de 8 caracteres'
+}
+const passUpper = v => {
+    if (!v && dlg.mode === 'edit') return true
+    return /[A-Z]/.test(v || '') || 'Inclua letra maiúscula'
+}
+const passLower = v => {
+    if (!v && dlg.mode === 'edit') return true
+    return /[a-z]/.test(v || '') || 'Inclua letra minúscula'
+}
+const passNum = v => {
+    if (!v && dlg.mode === 'edit') return true
+    return /\d/.test(v || '') || 'Inclua número'
+}
+const passSpec = v => {
+    if (!v && dlg.mode === 'edit') return true
+    return /[^A-Za-z0-9]/.test(v || '') || 'Inclua caractere especial'
+}
+
+const passwordRules = [passRequired, passLen, passUpper, passLower, passNum, passSpec]
+
+const calcStrength = v => {
+    let s = 0
+    if (v && v.length >= 8) s++
+    if (/[A-Z]/.test(v)) s++
+    if (/[a-z]/.test(v)) s++
+    if (/\d/.test(v)) s++
+    if (/[^A-Za-z0-9]/.test(v)) s++
+    return s / 5
+}
+
+const passwordStrengthValue = ref(0)
+watch(
+    () => form.user_password,
+    v => {
+        passwordStrengthValue.value = calcStrength(v || '')
+    }
+)
+
+const passwordStrength = computed(() => {
+    const v = passwordStrengthValue.value
+    if (!v) return { value: 0, color: 'grey-4' }
+    if (v < 0.4) return { value: v, color: 'negative' }
+    if (v < 0.8) return { value: v, color: 'warning' }
+    return { value: v, color: 'positive' }
+})
+
 
 function abrirNovo() {
     dlg.mode = 'create'
